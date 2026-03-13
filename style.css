@@ -1,1 +1,94 @@
 
+:root {
+    --primary-color: #4f46e5;
+    --primary-hover: #4338ca;
+    --bg-color: #f3f4f6;
+    --text-color: #1f2937;
+    --border-color: #d1d5db;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background-color: #ffffff;
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 500px;
+}
+
+h2 {
+    margin-top: 0;
+    color: var(--text-color);
+    font-size: 1.5rem;
+}
+
+p {
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+}
+
+.input-group {
+    margin-bottom: 1.5rem;
+}
+
+.input-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-size: 0.85rem;
+}
+
+.input-group input, 
+.input-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-sizing: border-box; /* Garante que o padding não aumente a largura */
+    outline-color: var(--primary-color);
+}
+
+.row {
+    display: flex;
+    gap: 1rem;
+}
+
+.row .input-group {
+    flex: 1;
+}
+
+.btn-enviar {
+    width: 100%;
+    padding: 0.85rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.btn-enviar:hover {
+    background-color: var(--primary-hover);
+}
+
+/* Responsividade para telas pequenas */
+@media (max-width: 480px) {
+    .row {
+        flex-direction: column;
+        gap: 0;
+    }
+}
