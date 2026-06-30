@@ -1473,3 +1473,44 @@ document.getElementById('back-btn').addEventListener('click',()=>location.reload
 </html>
 ENDDOC
 echo "Arquivo gerado: $(wc -c < /mnt/user-data/outputs/iron_fist_3d.html) bytes"
+
+  ash
+cd /home/claude
+node -e "
+const fs = require('fs');
+const code = fs.readFileSync('game_code.js', 'utf8');
+
+global.window = { addEventListener: ()=>{}, AudioContext: function(){}, webkitAudioContext: function(){} };
+function fakeCtx(){ return { clearRect(){}, save(){}, restore(){}, beginPath(){}, arc(){}, ellipse(){}, fill(){}, fillStyle:'', globalAlpha:1 }; }
+global.document = {
+  getElementById: () => ({ classList:{add(){},remove(){},toggle(){},contains(){return false}}, style:{}, addEventListener(){}, appendChild(){}, innerHTML:'', textContent:'', dataset:{}, getContext: fakeCtx, width:0, height:0 }),
+  createElement: () => ({ style:{}, classList:{add(){},remove(){}}, addEventListener(){}, appendChild(){} }),
+  querySelectorAll: () => [],
+  addEventListener: ()=>{},
+};
+global.navigator = { getGamepads: () => [] };
+global.innerWidth = 1280; global.innerHeight = 720;
+global.performance = { now: () => Date.now() };
+global.requestAnimationFrame = () => {};
+global.THREE = new Proxy({}, { get: () => function(){ return new Proxy({}, { get: () => function(){return {}} }) } });
+
+try {
+  eval(code);
+  console.log('EXECUTOU TUDO SEM ERROS DE REFERENCIA');
+  console.log('typeof showFatalityPrompt:', typeof showFatalityPrompt);
+  console.log('typeof checkFatalityInput:', typeof checkFatalityInput);
+  console.log('typeof processFatalityKey:', typeof processFatalityKey);
+  console.log('typeof advanceFatalityStep:', typeof advanceFatalityStep);
+  console.log('typeof FATALITY_SEQS.fire:', typeof FATALITY_SEQS.fire, FATALITY_SEQS.fire.length, 'passos');
+  console.log('typeof FATALITY_SEQS.scorpion:', FATALITY_SEQS.scorpion.length, 'passos');
+  console.log('typeof gpState:', typeof gpState);
+  console.log('Numero de personagens:', CHARACTERS.length);
+  console.log('Numero de sequencias fatality:', Object.keys(FATALITY_SEQS).length);
+  // checa se todo personagem tem sequencia fatality
+  let missing = CHARACTERS.filter(c => !FATALITY_SEQS[c.id]);
+  console.log('Personagens SEM fatality definido:', missing.map(c=>c.id));
+} catch(e) {
+  console.log('ERRO:', e.message);
+  console.log(e.stack.split('\n').slice(0,8).join('\n'));
+}
+"
