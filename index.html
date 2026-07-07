@@ -1,4 +1,3 @@
-cat > /mnt/user-data/outputs/iron_fist_3d.html << 'HEREDOC_END'
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -103,6 +102,12 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
 #combo-count{font-family:'Bebas Neue',sans-serif;font-size:76px;line-height:1;text-shadow:0 0 30px currentColor,0 4px 0 rgba(0,0,0,0.8);}
 #combo-label{font-size:10px;letter-spacing:5px;color:rgba(255,255,255,0.4);margin-top:-4px;}
 #combo-hits{font-size:12px;letter-spacing:2px;color:rgba(255,255,255,0.3);}
+#combo-pattern-name{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:#ffd600;text-shadow:0 0 20px #ffd600;margin-top:8px;animation:comboPop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both;}
+@keyframes comboPop{0%{transform:scale(0.3) skewX(-20deg);opacity:0}100%{transform:scale(1) skewX(0);opacity:1}}
+#super-combo-display{position:absolute;bottom:140px;right:20px;pointer-events:none;z-index:10;opacity:0;transition:opacity 0.3s;}
+#super-combo-bar{width:200px;height:12px;background:rgba(255,255,255,0.1);border-radius:6px;border:1px solid rgba(255,102,0,0.3);overflow:hidden;margin-bottom:6px;}
+#super-combo-fill{height:100%;width:0%;background:linear-gradient(90deg,#ff6600,#ffaa00);border-radius:6px;transition:width 0.15s ease;box-shadow:0 0 8px rgba(255,102,0,0.6);}
+#super-combo-label{font-size:10px;letter-spacing:2px;color:#ff6600;text-align:center;}
 #super-flash{position:absolute;inset:0;pointer-events:none;z-index:6;opacity:0;background:radial-gradient(ellipse at center,rgba(255,220,0,0.3),transparent 70%);}
 #special-charge{position:absolute;inset:0;pointer-events:none;z-index:7;opacity:0;transition:opacity 0.15s;}
 #special-charge-bar{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:320px;max-width:60vw;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;}
@@ -307,6 +312,11 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
     <div id="combo-count" style="color:#ffd600">0</div>
     <div id="combo-label">COMBO</div>
     <div id="combo-hits"></div>
+    <div id="combo-pattern-name"></div>
+  </div>
+  <div id="super-combo-display">
+    <div id="super-combo-bar"><div id="super-combo-fill"></div></div>
+    <div id="super-combo-label">SPECIAL CHAIN</div>
   </div>
   <div id="msg"><div id="msg-text">K.O.</div><div id="msg-sub"></div></div>
   <div id="round-announce"><div id="round-announce-text">ROUND 1</div></div>
@@ -321,7 +331,7 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
     <div class="ctrl-box">
       <span class="ctrl-key">W</span> Pular &nbsp;<span class="ctrl-key">A</span><span class="ctrl-key">D</span> Mover &nbsp;<span class="ctrl-key">A+A</span> Dash<br>
       <span class="ctrl-key">SPACE</span> Soco &nbsp;<span class="ctrl-key">V</span> Chute &nbsp;<span class="ctrl-key">Q</span> Defesa<br>
-      <span class="ctrl-key">E</span> Especial &nbsp;<span class="ctrl-key">R</span> SUPER &nbsp;<span style="color:rgba(255,68,68,0.6)">☠ FATALITY após KO final</span>
+      <span class="ctrl-key">E</span> Especial &nbsp;<span class="ctrl-key">R</span> SUPER &nbsp;<span style="color:rgba(255,200,0,0.7)">🔥 Combo Chains para + Dano!</span>
     </div>
     <div class="ctrl-box" style="text-align:right">
       <span class="ctrl-key">↑</span> Pular &nbsp;<span class="ctrl-key">←</span><span class="ctrl-key">→</span> Mover &nbsp;<span class="ctrl-key">←+←</span> Dash<br>
@@ -396,7 +406,7 @@ const CHARACTERS = [
   { id:'tech',     name:'NEXUS',      icon:'🤖', tag:'TECNOLOGIA', desc:'Laser, drones e precisão cirúrgica.',
     color:0x263238, skinColor:0xb0bec5, c1:0x00e5ff, c2:0xffd600, emissive:0x0a1a1f, darkColor:0x0d1a1f, shoeColor:0x102030,
     particleRise:false, particleGrav:0.0, auraSpeed:3.5, ringColor:0x00e5ff, ringColor2:0xffd600,
-    eyeColor:0x00e5ff, glowColor:0x0077aa, hpGrad:'linear-gradient(90deg,#263238,#00e5ff)', stColor:'#00e5ff', lightColor:0x0099bb,
+    eyeColor:0x00e5ff, glowColor:0x0099bb, hpGrad:'linear-gradient(90deg,#263238,#00e5ff)', stColor:'#00e5ff', lightColor:0x0099bb,
     projColor:0x00e5ff, projDmg:38, superDmg:70, projType:'tech',
     specialDesc:'Laser de precisão', superDesc:'Bombardeio de drones',
     fatalityName:'OVERDRIVE LETAL', fatalityEmoji:'🤖💀🤖' },
@@ -487,18 +497,24 @@ const CHARACTERS = [
 ];
 
 // ══════════════════════════════════════════════════════
+//  COMBO SYSTEM
+// ══════════════════════════════════════════════════════
+const COMBO_PATTERNS = {
+  'Double Punch': {sequence:['punch','punch'],multiplier:1.35,damage:3,name:'🥊 DOUBLE PUNCH'},
+  'Kick Follow': {sequence:['punch','kick'],multiplier:1.5,damage:5,name:'⚡ KICK FOLLOW'},
+  'Triple Hit': {sequence:['punch','kick','punch'],multiplier:1.8,damage:8,name:'💥 TRIPLE HIT'},
+  'Punch Barrage': {sequence:['punch','punch','punch'],multiplier:1.6,damage:6,name:'🔥 PUNCH BARRAGE'},
+  'Spinning Attack': {sequence:['kick','kick','punch'],multiplier:2.0,damage:10,name:'🌪️ SPINNING ATTACK'},
+  'Execution': {sequence:['punch','punch','kick','kick'],multiplier:2.5,damage:15,name:'💀 EXECUTION'},
+  'Ultimate Combo': {sequence:['punch','kick','punch','kick','punch'],multiplier:3.0,damage:20,name:'⭐ ULTIMATE COMBO'},
+};
+
+// ══════════════════════════════════════════════════════
 //  FATALITY SYSTEM
 // ══════════════════════════════════════════════════════
-/*
-  Fatality por player:
-  P1: ↑ ↓ ← → + F (teclas: W S A D + F)
-  P2: ↑ ↓ ← → + K (teclas: ArrowUp ArrowDown ArrowLeft ArrowRight + K)
-  Tempo: 6 segundos após o KO final
-*/
-
 const FATALITY_SEQUENCES = {
-  1: ['up','down','left','right','F'],   // P1
-  2: ['up','down','left','right','K'],   // P2
+  1: ['up','down','left','right','F'],
+  2: ['up','down','left','right','K'],
 };
 
 const KEY_LABELS = {
@@ -507,7 +523,7 @@ const KEY_LABELS = {
 
 let fatalityState = {
   active: false,
-  winner: null,    // 1 ou 2
+  winner: null,
   loser: null,
   sequence: [],
   progress: 0,
@@ -515,7 +531,7 @@ let fatalityState = {
   timerInterval: null,
   executed: false,
   available: false,
-  wasLastRound: false, // só ativa no último round
+  wasLastRound: false,
 };
 
 // Partículas de sangue
@@ -549,7 +565,6 @@ function spawnBloodParticles(x, y, count, color='#cc0000'){
 }
 
 function spawnBloodDrip(x, y, color='#aa0000'){
-  // gotas que escorrem pela tela
   for(let i=0;i<8;i++){
     bloodParticles.push({
       x: x + (Math.random()-0.5)*200,
@@ -579,7 +594,6 @@ function animateBlood(){
     bloodCtx.globalAlpha = p.life;
     bloodCtx.fillStyle = p.color;
     if(p.drip){
-      // gota alongada
       bloodCtx.beginPath();
       bloodCtx.ellipse(p.x,p.y,p.r*0.5,p.r*1.4,0,0,Math.PI*2);
     } else {
@@ -599,7 +613,6 @@ function startBloodAnimation(){
   animateBlood();
 }
 
-// Construir a UI de input do fatality
 function buildFatalityInputUI(playerWinner) {
   const seq = FATALITY_SEQUENCES[playerWinner];
   const keysEl = document.getElementById('fatality-keys');
@@ -644,7 +657,6 @@ function showFatalityPrompt(winner) {
   fatalityState.executed = false;
   fatalityState.sequence = [...FATALITY_SEQUENCES[winner]];
 
-  // Anuncio "FINISH HIM!"
   const faText = document.getElementById('fa-text');
   const loserName = winner===1 ? (p2?p2.ch.name:'P2') : (p1?p1.ch.name:'P1');
   faText.textContent = `FINISH ${loserName}!`;
@@ -652,7 +664,6 @@ function showFatalityPrompt(winner) {
   faEl.classList.add('show');
   setTimeout(()=>faEl.classList.remove('show'), 2400);
 
-  // Mostrar UI de input após 1.8s
   setTimeout(()=>{
     if(!fatalityState.active) return;
     buildFatalityInputUI(winner);
@@ -660,7 +671,6 @@ function showFatalityPrompt(winner) {
     ui.classList.add('visible');
     updateFatalityKeyUI(0);
 
-    // Timer visual
     let t = 6;
     const fill = document.getElementById('fatality-timer-fill');
     fatalityState.timerInterval = setInterval(()=>{
@@ -679,7 +689,6 @@ function cancelFatality(){
   fatalityState.active = false;
   const ui = document.getElementById('fatality-input-ui');
   ui.classList.remove('visible');
-  // Mostrar tela de vitória normal
   showWinnerScreen(fatalityState.winner || 1, 'ko');
 }
 
@@ -697,16 +706,13 @@ function executeFatality() {
   const winCh = winner===1 ? p1.ch : p2.ch;
   const loserFighter = loser===1 ? p1 : p2;
 
-  // --- Efeito de sangue na câmera (shake extremo) ---
   shakeCamera = 2.5;
 
-  // --- Escurecer a tela ---
   const hitFlash = document.getElementById('hit-flash');
   hitFlash.style.background = '#000';
   hitFlash.style.transition = 'opacity 0.8s';
   hitFlash.style.opacity = '0.85';
 
-  // Jogar vítima para longe
   if(loserFighter){
     loserFighter.vel.x = (winner===1?1:-1)*30;
     loserFighter.vel.y = 22;
@@ -715,11 +721,9 @@ function executeFatality() {
 
   playHit('super');
 
-  // Sangue explode do centro
   const cx = innerWidth/2, cy = innerHeight/2;
   setTimeout(()=>{
     startBloodAnimation();
-    // Explosão de sangue principal
     for(let i=0;i<8;i++){
       setTimeout(()=>{
         spawnBloodParticles(cx+(Math.random()-0.5)*300, cy+(Math.random()-0.5)*200, 30, '#cc0000');
@@ -731,7 +735,6 @@ function executeFatality() {
     }
   }, 300);
 
-  // Flash vermelho violento
   setTimeout(()=>{
     hitFlash.style.background = '#ff0000';
     hitFlash.style.opacity = '0.6';
@@ -741,7 +744,6 @@ function executeFatality() {
     }, 150);
   }, 600);
 
-  // Texto FATALITY
   setTimeout(()=>{
     const overlay = document.getElementById('fatality-overlay');
     const textWrap = document.getElementById('fatality-text-wrap');
@@ -757,7 +759,6 @@ function executeFatality() {
       textWrap.classList.add('show');
       playFatalitySFX();
 
-      // Mais sangue ao mostrar o texto
       for(let i=0;i<5;i++){
         setTimeout(()=>{
           spawnBloodDrip(Math.random()*innerWidth, 0, '#cc0000');
@@ -767,7 +768,6 @@ function executeFatality() {
     }, 100);
   }, 1200);
 
-  // Tela de vitória após o fatality
   setTimeout(()=>{
     gameOver = true;
     const overlay = document.getElementById('fatality-overlay');
@@ -780,7 +780,6 @@ function executeFatality() {
 function playFatalitySFX(){
   try{
     const ac = getAudio();
-    // Ominoso e grave
     const osc1=ac.createOscillator(),osc2=ac.createOscillator();
     const gain=ac.createGain(),comp=ac.createDynamicsCompressor();
     osc1.type='sawtooth';osc2.type='square';
@@ -793,7 +792,6 @@ function playFatalitySFX(){
     osc1.connect(comp);osc2.connect(comp);comp.connect(gain);gain.connect(ac.destination);
     osc1.start(ac.currentTime);osc2.start(ac.currentTime);
     osc1.stop(ac.currentTime+3);osc2.stop(ac.currentTime+3);
-    // Voz sintetizada "FATALITY" — sweep de frequência
     const osc3=ac.createOscillator(),g3=ac.createGain();
     osc3.type='square';
     osc3.frequency.setValueAtTime(220,ac.currentTime+0.1);
@@ -805,13 +803,11 @@ function playFatalitySFX(){
   }catch(e){}
 }
 
-// Processar input do fatality
 function processFatalityKey(code){
   if(!fatalityState.active || fatalityState.executed) return;
   const seq = FATALITY_SEQUENCES[fatalityState.winner];
   const expected = seq[fatalityState.progress];
 
-  // Mapear código para direção
   let dir = null;
   const w = fatalityState.winner;
   if(w===1){
@@ -833,7 +829,6 @@ function processFatalityKey(code){
   if(dir === expected){
     fatalityState.progress++;
     updateFatalityKeyUI(fatalityState.progress);
-    // SFX de tecla certa
     try{
       const ac=getAudio();const o=ac.createOscillator(),g=ac.createGain();
       o.frequency.value=440+fatalityState.progress*120;
@@ -842,14 +837,11 @@ function processFatalityKey(code){
     }catch(e){}
 
     if(fatalityState.progress >= seq.length){
-      // FATALITY!
       executeFatality();
     }
   } else {
-    // Tecla errada — reseta progress
     fatalityState.progress = 0;
     updateFatalityKeyUI(0);
-    // SFX de erro
     try{
       const ac=getAudio();const o=ac.createOscillator(),g=ac.createGain();
       o.frequency.value=80;o.type='square';
@@ -1185,7 +1177,11 @@ function updateProjectiles(dt){
     if(dist<(pr.isSuper?1.6:1.1)){
       pr.hit=true;
       const isBlocked=target.state===STATES.BLOCK&&target.stamina>0;
-      const fd=isBlocked?pr.dmg*0.1:pr.dmg;
+      let fd=isBlocked?pr.dmg*0.1:pr.dmg;
+      // Aplicar multiplicador de combo se houver
+      if(pr.owner.comboMultiplier>1 && !pr.isSuper){
+        fd *= pr.owner.comboMultiplier;
+      }
       target.hp=Math.max(0,target.hp-fd);scheduleGhostHp(target);
       if(!isBlocked){target.vel.x=pr.owner.facing*(pr.isSuper?14:10);target.vel.y=pr.isSuper?10:7;target.isGrounded=false;target.setState(STATES.HURT,true);pr.owner.combo++;currentComboOwner=pr.owner.id;comboFadeTimer=2.5;updateComboHUD(pr.owner.combo);pr.owner.superMeter=Math.min(MAX_SUPER,pr.owner.superMeter+20);}
       else{target.stamina-=22;target.superMeter=Math.min(MAX_SUPER,target.superMeter+3);}
@@ -1219,6 +1215,9 @@ class Fighter{
     this.pos=new THREE.Vector3(x,FLOOR_Y,0);this.vel=new THREE.Vector3(0,0,0);
     this.isGrounded=true;this.opponent=null;
     this.dashCooldown=0;this.lastDirKey=null;this.lastDirTime=0;
+    // Novo: Sistema de combos avançado
+    this.comboSequence=[];this.comboTimer=0;this.currentComboPattern=null;
+    this.comboMultiplier=1.0;this.lastHitTime=0;this.superComboMeter=0;
     this._build();
   }
   _build(){
@@ -1299,7 +1298,6 @@ class Fighter{
 
   physicsStep(dt){
     if(this.state===STATES.KO){
-      // Durante fatality, deixar a física continuar para a vítima voar
       if(!this.isGrounded)this.vel.y+=GRAVITY*dt;
       this.pos.x+=this.vel.x*dt;this.pos.y+=this.vel.y*dt;
       if(this.pos.y<=FLOOR_Y){this.pos.y=FLOOR_Y;this.vel.y=0;this.isGrounded=true;}
@@ -1320,6 +1318,8 @@ class Fighter{
   animate(dt){
     const t=performance.now()*0.001;
     this.stateTime+=dt;this.auraTimer+=dt;
+    this.comboTimer-=dt;
+    if(this.comboTimer<=0){this.comboSequence=[];this.comboMultiplier=1.0;this.currentComboPattern=null;}
     this.group.position.set(this.pos.x,this.pos.y,this.pos.z);
     this.root.rotation.y=this.facing>0?-Math.PI/2:Math.PI/2;
     if(this.shakeTime>0){this.group.position.x+=(Math.random()-0.5)*0.15;this.shakeTime-=dt;}
@@ -1424,20 +1424,55 @@ class Fighter{
 }
 
 // ══════════════════════════════════════════════════════
-//  COMBAT
+//  COMBAT SYSTEM COM COMBOS AVANÇADOS
 // ══════════════════════════════════════════════════════
 const HIT_FRAMES={punch:[0.42,0.62],kick:[0.50,0.68]};
+
+function checkComboPattern(fighter){
+  for(const [name,pattern] of Object.entries(COMBO_PATTERNS)){
+    if(fighter.comboSequence.length===pattern.sequence.length){
+      const matches=fighter.comboSequence.every((a,i)=>a===pattern.sequence[i]);
+      if(matches){
+        fighter.currentComboPattern=name;
+        fighter.comboMultiplier=pattern.multiplier;
+        // Animar o padrão de combo
+        showComboPattern(name,fighter);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function showComboPattern(name,fighter){
+  const pattern=COMBO_PATTERNS[name];
+  const el=document.getElementById('combo-pattern-name');
+  if(el){
+    el.textContent=pattern.name;
+    el.style.color='#'+fighter.ch.c1.toString(16).padStart(6,'0');
+    el.style.textShadow=`0 0 20px #${fighter.ch.c1.toString(16).padStart(6,'0')}`;
+  }
+}
 
 function checkCombat(){
   [[p1,p2],[p2,p1]].forEach(([atk,vic])=>{
     if(atk.hitCooldown>0){atk.hitCooldown-=1/60;return;}
-    const{state,stateTime}=atk;let range=null,dmg=0,hitPoint=null,knockback=0,liftY=0,hitType='punch';
-    if(state===STATES.PUNCH){const p=stateTime/0.38;if(p>=HIT_FRAMES.punch[0]&&p<=HIT_FRAMES.punch[1]){range=2.2;dmg=7+Math.random()*4;hitPoint=atk.getHitPoint();knockback=4;liftY=5;hitType='punch';}}
-    else if(state===STATES.KICK){const p=stateTime/0.44;if(p>=HIT_FRAMES.kick[0]&&p<=HIT_FRAMES.kick[1]){range=2.6;dmg=12+Math.random()*6;hitPoint=atk.getKickPoint();knockback=6;liftY=6;hitType='kick';}}
+    const{state,stateTime}=atk;let range=null,dmg=0,hitPoint=null,knockback=0,liftY=0,hitType='punch',attackType=null;
+    if(state===STATES.PUNCH){const p=stateTime/0.38;if(p>=HIT_FRAMES.punch[0]&&p<=HIT_FRAMES.punch[1]){range=2.2;dmg=7+Math.random()*4;hitPoint=atk.getHitPoint();knockback=4;liftY=5;hitType='punch';attackType='punch';}}
+    else if(state===STATES.KICK){const p=stateTime/0.44;if(p>=HIT_FRAMES.kick[0]&&p<=HIT_FRAMES.kick[1]){range=2.6;dmg=12+Math.random()*6;hitPoint=atk.getKickPoint();knockback=6;liftY=6;hitType='kick';attackType='kick';}}
     if(!range)return;
     const dist=Math.hypot(atk.pos.x-vic.pos.x,atk.pos.y-vic.pos.y);if(dist>range)return;
     const isBlocked=vic.state===STATES.BLOCK&&vic.stamina>0;
     if(isBlocked){dmg*=0.12;vic.stamina-=14;knockback*=0.25;liftY=0;}
+    
+    // Sistema de combo
+    if(!isBlocked&&attackType){
+      atk.comboSequence.push(attackType);
+      atk.comboTimer=2.5; // 2.5 segundos para próximo ataque
+      checkComboPattern(atk);
+      dmg*=atk.comboMultiplier; // Aplicar multiplicador
+    }
+    
     vic.hp=Math.max(0,vic.hp-dmg);scheduleGhostHp(vic);
     const dir=vic.pos.x-atk.pos.x>0?1:-1;vic.vel.x=dir*knockback;vic.vel.y=isBlocked?0:liftY;
     if(!isBlocked)vic.isGrounded=false;vic.shakeTime=0.15;atk.hitCooldown=0.2;
@@ -1486,27 +1521,22 @@ function endRound(wid){
   roundActive=false;clearInterval(timerInterval);
   roundWins[wid]++;updateRoundPips();
 
-  // Verificar se é o round decisivo (último round que encerra o match)
   const winsNeeded = Math.ceil(maxRounds/2);
   const isMatchOver = (roundWins[wid] >= winsNeeded);
 
   if(isMatchOver) {
-    // É o KO final — acionar sistema de fatality
     setTimeout(()=>{
       showAnnounce('K.O.!','',1600);
     }, 200);
     setTimeout(()=>{
-      // Escurecer o cenário
       const hitFlash = document.getElementById('hit-flash');
       hitFlash.style.transition = 'opacity 1.2s';
       hitFlash.style.background = 'rgba(80,0,0,0.0)';
       hitFlash.style.opacity = '0.4';
-      // Ativar prompt de fatality
       fatalityState.wasLastRound = true;
       showFatalityPrompt(wid);
     }, 1800);
   } else {
-    // Round normal, não é o final
     setTimeout(()=>{
       showAnnounce('K.O.',`${wid===1?p1.ch.name:p2.ch.name} vence!`,2000);
       checkMatchEnd(wid,'ko');
@@ -1531,6 +1561,7 @@ function showWinnerScreen(wid,reason){
 function resetFighters(){
   [p1,p2].forEach((f,i)=>{
     f.hp=f.maxHp;f.stamina=f.maxStamina;f.superMeter=0;f.combo=0;f.state=STATES.IDLE;f.stateTime=0;f.specialFired=false;
+    f.comboSequence=[];f.comboTimer=0;f.comboMultiplier=1.0;f.currentComboPattern=null;
     f.pos.set(i===0?-5:5,FLOOR_Y,0);f.vel.set(0,0,0);f.isGrounded=true;f.facing=i===0?1:-1;
     f.root.rotation.set(0,0,0);f.root.position.set(0,FIGHTER_GROUND_Y,0);
     f.auraRing.material.opacity=0.6;f.auraRing2.material.opacity=0.45;
@@ -1552,7 +1583,6 @@ const keys={};
 window.addEventListener('keydown',e=>{
   keys[e.code]=true;
   if(['ArrowUp','ArrowDown','Space'].includes(e.code))e.preventDefault();
-  // Fatality input
   if(fatalityState.active && !fatalityState.executed){
     processFatalityKey(e.code);
   }
@@ -1643,5 +1673,3 @@ document.getElementById('back-btn').addEventListener('click',()=>location.reload
 </script>
 </body>
 </html>
-HEREDOC_END
-echo "Feito: $(wc -c < /mnt/user-data/outputs/iron_fist_3d.html) bytes"
