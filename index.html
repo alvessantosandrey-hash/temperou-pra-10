@@ -125,6 +125,60 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
 @keyframes emblemPulse{0%,100%{transform:scale(1);opacity:0.9}50%{transform:scale(1.25);opacity:1}}
 @keyframes auraBreath{0%,100%{opacity:0.3;transform:scale(0.95)}50%{opacity:0.55;transform:scale(1.08)}}
 @keyframes ringPulse{0%,100%{transform:scaleX(1);opacity:0.5}50%{transform:scaleX(1.15);opacity:0.85}}
+
+/* Taunt / desafio ao selecionar */
+#char-reveal.show #char-figure.taunt-pose{animation:figureSlam 0.9s cubic-bezier(0.175,0.885,0.32,1.275) forwards, tauntBounce 0.6s 0.9s ease-in-out infinite;}
+@keyframes tauntBounce{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.04) translateY(-8px)}}
+#char-reveal.show #char-figure.taunt-pose .fig-arm-r{
+  animation:tauntPoint 0.7s 0.85s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+}
+#char-reveal.show #char-figure.taunt-pose .fig-arm-l{
+  animation:tauntFlex 0.7s 0.9s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+}
+@keyframes tauntPoint{
+  0%{transform:rotate(-25deg)}
+  40%{transform:rotate(-110deg) scaleY(1.1)}
+  100%{transform:rotate(-95deg) translateX(4px)}
+}
+@keyframes tauntFlex{
+  0%{transform:rotate(12deg)}
+  50%{transform:rotate(55deg)}
+  100%{transform:rotate(40deg)}
+}
+#char-reveal.show #char-figure.taunt-pose .fig-torso{
+  animation:tauntChest 0.5s 0.95s ease forwards;
+}
+@keyframes tauntChest{to{transform:scaleX(1.08) scaleY(1.05)}}
+#char-reveal.show #char-figure.taunt-pose .fig-head{
+  animation:tauntHead 1.2s 1s ease-in-out infinite;
+}
+@keyframes tauntHead{
+  0%,100%{transform:translateY(0) rotate(0)}
+  30%{transform:translateY(-3px) rotate(-8deg)}
+  60%{transform:translateY(-2px) rotate(6deg)}
+}
+#char-taunt-bubble{
+  position:relative;z-index:4;margin-top:10px;padding:8px 18px;
+  font-family:'Bebas Neue',sans-serif;font-size:clamp(14px,2.2vw,22px);
+  letter-spacing:3px;color:#ffd600;text-shadow:0 0 16px #ffd600,0 2px 0 #000;
+  background:rgba(0,0,0,0.55);border:2px solid rgba(255,214,0,0.45);
+  border-radius:8px;opacity:0;transform:scale(0.5) translateY(20px);
+  max-width:90vw;text-align:center;
+}
+#char-reveal.show #char-taunt-bubble{
+  animation:tauntBubbleIn 0.5s 1.05s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+}
+@keyframes tauntBubbleIn{
+  0%{opacity:0;transform:scale(0.4) translateY(24px) skewX(-8deg)}
+  70%{opacity:1;transform:scale(1.08) translateY(-4px) skewX(2deg)}
+  100%{opacity:1;transform:scale(1) translateY(0) skewX(0)}
+}
+#char-taunt-bubble::before{
+  content:'';position:absolute;top:-8px;left:50%;margin-left:-6px;
+  border-left:6px solid transparent;border-right:6px solid transparent;
+  border-bottom:8px solid rgba(255,214,0,0.45);
+}
+
 #char-reveal-icon{font-size:clamp(64px,12vw,120px);line-height:1;filter:drop-shadow(0 0 40px currentColor);animation:revealIconFloat 2s ease-in-out infinite;margin-top:-8px;position:relative;z-index:3;}
 @keyframes revealIconFloat{0%,100%{transform:translateY(0) scale(1) rotate(0deg)}50%{transform:translateY(-16px) scale(1.1) rotate(6deg)}}
 #char-reveal.show #char-reveal-icon{animation:iconSlam 0.7s 0.15s cubic-bezier(0.175,0.885,0.32,1.275) both,revealIconFloat 2s 0.9s ease-in-out infinite;}
@@ -384,6 +438,7 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
     <div id="char-reveal-tag">—</div>
     <div id="char-reveal-player">JOGADOR 1</div>
     <div id="char-reveal-desc"></div>
+    <div id="char-taunt-bubble"></div>
   </div>
 </div>
 <div id="canvas-container">
@@ -2300,37 +2355,53 @@ function buildCharGrid() {
   });
 }
 let revealTimer = null;
-function speakCharName(ch, player){
+const TAUNT_LINES = [
+  'Ha! Você não é páreo pra mim!',
+  'Venha! Eu te desafio!',
+  'Vou acabar com você!',
+  'É isso? Só isso que tem?',
+  'Prepare-se para perder!',
+  'Ninguém me derrota!',
+  'Vamos ver do que você é feito!',
+  'Seu fim começa agora!',
+  'Ha ha ha! Que ousado!',
+  'Eu sou o melhor! Aceita o desafio?',
+  'Tremam perante o meu poder!',
+  'Isso vai ser fácil demais!',
+  'Mostre do que é capaz... se puder!',
+  'Você já perdeu e nem sabe!',
+  'Desafio aceito? Então venha!',
+];
+function getTauntLine(ch){
+  const personal = [
+    ch.name + '! Aceita o desafio?',
+    'Eu sou ' + ch.name + '! Venha lutar!',
+    ch.name + ' não perde para ninguém!',
+    'Elemento ' + ch.tag + '! Tema o meu poder!',
+  ];
+  const all = TAUNT_LINES.concat(personal);
+  return all[Math.floor(Math.random()*all.length)];
+}
+function speakCharName(ch, player, tauntText){
   try{
     if(!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
-    const skinName = (ch.skins && ch.skins[ch.skinIdx]) ? ch.skins[ch.skinIdx].name : ch.name;
-    const phrases = [
-      ch.name + '!',
-      'É o ' + ch.name + '!',
-      ch.name + '! Elemento ' + ch.tag + '!',
-      'Jogador ' + (player+1) + ' escolhe ' + ch.name + '!',
-      skinName + ' entra na arena!',
-    ];
-    const text = phrases[Math.floor(Math.random()*phrases.length)];
+    const text = tauntText || getTauntLine(ch);
     const doSpeak = () => {
       const voices = window.speechSynthesis.getVoices();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'pt-BR';
-      u.rate = 0.9;
-      u.pitch = player === 0 ? 0.75 : 1.0;
+      u.rate = 0.95;
+      u.pitch = player === 0 ? 0.7 : 1.05;
       u.volume = 1;
-      // Prefer Brazilian Portuguese voices (male/female)
       const prefer = voices.find(v => /pt-BR|pt_BR/.test(v.lang) && /Google|Microsoft|Luciana|Francisca|Ricardo|Daniel|Maria|pt-BR/.test(v.name))
         || voices.find(v => /pt-BR|pt_BR|Portuguese \(Brazil\)|português \(Brasil\)/i.test(v.lang + ' ' + v.name))
         || voices.find(v => /pt/.test(v.lang));
       if(prefer) u.voice = prefer;
       window.speechSynthesis.speak(u);
     };
-    // Voices may load asynchronously
     if(window.speechSynthesis.getVoices().length === 0){
       window.speechSynthesis.onvoiceschanged = () => { doSpeak(); window.speechSynthesis.onvoiceschanged = null; };
-      // Fallback after short wait
       setTimeout(doSpeak, 250);
     } else {
       doSpeak();
@@ -2405,6 +2476,7 @@ function showCharReveal(player, idx){
   const glow = hexCss(ch.glowColor||ch.c1);
   bg.style.background = `radial-gradient(ellipse at 50% 40%, ${color}66 0%, ${color2}22 35%, #000 70%)`;
   if(impact) impact.style.setProperty('--impact-color', color);
+  const tauntText = getTauntLine(ch);
   if(figure){
     figure.style.setProperty('--fig-color', body);
     figure.style.setProperty('--fig-c1', color);
@@ -2412,10 +2484,12 @@ function showCharReveal(player, idx){
     figure.style.setProperty('--fig-dark', dark);
     figure.style.setProperty('--fig-shoe', shoe);
     figure.style.setProperty('--fig-glow', glow+'88');
-    // Restart figure animation
+    figure.classList.remove('taunt-pose');
     figure.style.animation = 'none';
     void figure.offsetWidth;
     figure.style.animation = '';
+    // Pose de deboche / desafio após o slam
+    setTimeout(()=> figure.classList.add('taunt-pose'), 50);
   }
   icon.textContent = ch.icon;
   icon.style.color = color;
@@ -2429,27 +2503,44 @@ function showCharReveal(player, idx){
   pl.textContent = player === 0 ? '⬡ JOGADOR 1' : 'JOGADOR 2 ⬡';
   pl.style.color = player === 0 ? '#00e5ff' : '#ff6600';
   desc.textContent = ch.desc;
+  // Balão de provocação
+  const bubble = document.getElementById('char-taunt-bubble');
+  if(bubble){
+    bubble.textContent = '💬 ' + tauntText;
+    bubble.style.color = color;
+    bubble.style.borderColor = color;
+    bubble.style.textShadow = `0 0 16px ${color}, 0 2px 0 #000`;
+    bubble.style.animation = 'none';
+    void bubble.offsetWidth;
+  }
   // Restart animation
   el.classList.remove('show');
   void el.offsetWidth;
   el.classList.add('show');
   playMenu('select');
   spawnRevealParticles(color, color2);
-  // Extra impact SFX
+  // Extra impact SFX + risada / whoosh de desafio
   try{
     const ac=getAudio();
     playTone(80,'sawtooth',0.35,0.2,40);
     playTone(220,'square',0.15,0.1,110,0.05);
     playNoise(0.2,0.12,600);
+    // Tom de deboche (subida + queda)
+    setTimeout(()=>{
+      playTone(330,'square',0.08,0.1,440);
+      playTone(440,'square',0.08,0.1,520,0.06);
+      playTone(520,'sawtooth',0.2,0.12,200,0.12);
+    }, 700);
   }catch(e){}
-  // Voice after short delay so it syncs with name appearing
-  setTimeout(()=>speakCharName(ch, player), 320);
+  // Voz de provocação sincronizada com o balão
+  setTimeout(()=>speakCharName(ch, player, tauntText), 900);
   if(revealTimer) clearTimeout(revealTimer);
   revealTimer = setTimeout(()=>{
     el.classList.remove('show');
+    if(figure) figure.classList.remove('taunt-pose');
     const cvs=document.getElementById('char-reveal-particles');
     if(cvs){const c=cvs.getContext('2d');c.clearRect(0,0,cvs.width,cvs.height);}
-  }, 1800);
+  }, 2800);
 }
 function selectChar(player, idx) {
   const ch = CHARACTERS[idx];
