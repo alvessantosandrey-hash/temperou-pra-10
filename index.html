@@ -335,6 +335,9 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
 .map-check{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:#ffd600;color:#000;font-size:12px;display:none;align-items:center;justify-content:center;z-index:2;font-weight:bold;}
 .map-card.selected .map-check{display:flex;}
 
+
+.fighter-nametag{position:absolute;pointer-events:none;z-index:15;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;text-shadow:0 0 10px currentColor,0 2px 4px #000,0 0 20px currentColor;transform:translate(-50%,-100%);white-space:nowrap;opacity:0.95;padding:2px 8px;border-radius:4px;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.15);}
+
 </style>
 </head>
 <body>
@@ -389,7 +392,7 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
 <div id="map-screen">
   <div class="map-top">
     <div class="map-title">ESCOLHA O MAPA</div>
-    <div class="map-sub">Selecione o campo de batalha</div>
+    <div class="map-sub">Selecione o campo de batalha · 🎮 D-PAD navega · A/START confirma · B volta</div>
   </div>
   <div class="map-grid" id="map-grid"></div>
   <div class="map-footer">
@@ -442,6 +445,8 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
   </div>
 </div>
 <div id="canvas-container">
+  <div id="name-tag-p1" class="fighter-nametag">P1</div>
+  <div id="name-tag-p2" class="fighter-nametag">P2</div>
   <div id="hit-flash"></div>
   <div id="super-flash"></div>
   <div id="special-charge">
@@ -539,7 +544,7 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
       <span class="ctrl-key">SPACE</span> Soco &nbsp;<span class="ctrl-key">V</span> Chute &nbsp;<span class="ctrl-key">Q</span> Defesa<br>
       <span class="ctrl-key">F</span> Cotovelo &nbsp;<span class="ctrl-key">C</span> Uppercut &nbsp;<span class="ctrl-key">G</span> Soco Pesado<br>
       <span class="ctrl-key">B</span> Rasteira &nbsp;<span class="ctrl-key">E</span> Especial &nbsp;<span class="ctrl-key">R</span> SUPER &nbsp;<span class="ctrl-key">T</span> Teleporte<br>
-      <span style="color:rgba(0,229,255,0.7)">🎮 USB: A=Pular X=Soco Y=Chute B=Defesa L1=Esp R1=Super L2=Pesado R2=Rasteira L3=Teleporte</span>
+      <span style="color:rgba(0,229,255,0.7)">🎮 USB: A=Pular X=Soco(segurar=combo) Y=Chute(segurar=combo) B=Defesa L1=Esp R1=Super L2=Pesado R2=Rasteira Select=Cotovelo Start=Uppercut L3=Teleporte</span>
     </div>
     <div class="ctrl-box" style="text-align:right">
       <span class="ctrl-key">↑</span> Pular &nbsp;<span class="ctrl-key">←</span><span class="ctrl-key">→</span> Mover &nbsp;<span class="ctrl-key">←+←</span> Dash<br>
@@ -2757,12 +2762,72 @@ function showMapScreen(){
   playMenu('select');
   document.getElementById('select-screen').classList.add('hidden');
   gpSelect.active = false;
+  gpMap.active = true;
+  gpMap.cursor = selectedMap||0;
   buildMapGrid();
   document.getElementById('map-screen').classList.add('show');
 }
 
+// ── Map select via USB Gamepad ──
+let gpMap = { active:false, cursor:0, lastNav:0, lastConfirm:0 };
+function gpMapPoll(){
+  if(!gpMap.active) return;
+  const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+  const now = performance.now();
+  const total = MAPS.length;
+  // Use first connected pad
+  let gp = null;
+  for(let i=0;i<gps.length;i++){ if(gps[i]){ gp=gps[i]; break; } }
+  if(!gp) return;
+  let dx=0, dy=0;
+  if(gp.axes[0]<-0.5 || gp.buttons[14]?.pressed) dx=-1;
+  else if(gp.axes[0]>0.5 || gp.buttons[15]?.pressed) dx=1;
+  if(gp.axes[1]<-0.5 || gp.buttons[12]?.pressed) dy=-1;
+  else if(gp.axes[1]>0.5 || gp.buttons[13]?.pressed) dy=1;
+  // Grid approx 4 cols
+  const cols = 4;
+  if((dx||dy) && now-gpMap.lastNav>200){
+    gpMap.lastNav = now;
+    let col = gpMap.cursor % cols;
+    let row = Math.floor(gpMap.cursor / cols);
+    const maxRow = Math.ceil(total / cols) - 1;
+    col = Math.max(0, Math.min(cols-1, col+dx));
+    row = Math.max(0, Math.min(maxRow, row+dy));
+    let ni = row * cols + col;
+    if(ni >= total) ni = total - 1;
+    gpMap.cursor = ni;
+    selectedMap = ni;
+    document.querySelectorAll('.map-card').forEach((c,i)=>{
+      c.classList.toggle('selected', i===ni);
+      c.style.outline = i===ni ? '2px solid #ffd600' : '';
+      c.style.outlineOffset = i===ni ? '3px' : '';
+    });
+    const btn = document.getElementById('map-fight-btn');
+    if(btn){ btn.disabled=false; btn.classList.add('ready'); }
+    try{playMenu('hover');}catch(e){}
+  }
+  // A confirm / Start fight
+  if((gp.buttons[0]?.pressed || gp.buttons[9]?.pressed || gp.buttons[8]?.pressed) && now-gpMap.lastConfirm>400){
+    gpMap.lastConfirm = now;
+    if(selected[0]!==null && selected[1]!==null){
+      showVsScreen();
+    }
+  }
+  // B back
+  if(gp.buttons[1]?.pressed && now-gpMap.lastConfirm>400){
+    gpMap.lastConfirm = now;
+    hideMapScreen();
+    document.getElementById('select-screen').classList.remove('hidden');
+    gpSelect.active = true;
+    gpMap.active = false;
+  }
+}
+(function gpMapLoop(){ gpMapPoll(); requestAnimationFrame(gpMapLoop); })();
+
+
 function hideMapScreen(){
   document.getElementById('map-screen').classList.remove('show');
+  gpMap.active = false;
 }
 
 function showVsScreen() {
@@ -2941,6 +3006,54 @@ function initThree(){
 function buildArena(ch1,ch2){
   const map = MAPS[selectedMap] || MAPS[0];
   const theme = map.theme;
+
+  // ── Céu / fundo do mapa ──
+  function addSky(colors, starCount){
+    // Back plane (sky)
+    const canvas = document.createElement('canvas');
+    canvas.width=512; canvas.height=256;
+    const ctx=canvas.getContext('2d');
+    const g=ctx.createLinearGradient(0,0,0,256);
+    colors.forEach((c,i)=>g.addColorStop(i/(colors.length-1), c));
+    ctx.fillStyle=g; ctx.fillRect(0,0,512,256);
+    if(starCount){
+      ctx.fillStyle='#fff';
+      for(let i=0;i<starCount;i++){
+        const x=Math.random()*512, y=Math.random()*140, r=Math.random()*1.5;
+        ctx.globalAlpha=0.4+Math.random()*0.6;
+        ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+      }
+      ctx.globalAlpha=1;
+    }
+    const tex=new THREE.CanvasTexture(canvas);
+    const sky=new THREE.Mesh(new THREE.PlaneGeometry(80,40), new THREE.MeshBasicMaterial({map:tex, depthWrite:false}));
+    sky.position.set(0,12,-18); scene.add(sky);
+    // Side walls
+    const sideMat=new THREE.MeshBasicMaterial({map:tex, depthWrite:false, side:THREE.DoubleSide});
+    const left=new THREE.Mesh(new THREE.PlaneGeometry(40,40), sideMat);
+    left.position.set(-28,10,-5); left.rotation.y=Math.PI/2; scene.add(left);
+    const right=new THREE.Mesh(new THREE.PlaneGeometry(40,40), sideMat);
+    right.position.set(28,10,-5); right.rotation.y=-Math.PI/2; scene.add(right);
+  }
+  function addHills(color, count){
+    for(let i=0;i<count;i++){
+      const h=new THREE.Mesh(new THREE.SphereGeometry(3+Math.random()*4,8,6),
+        new THREE.MeshStandardMaterial({color,roughness:1}));
+      h.scale.y=0.3+Math.random()*0.25;
+      h.position.set(-20+i*(40/count)+Math.random()*2, 0.1, -12-Math.random()*4);
+      scene.add(h);
+    }
+  }
+  function addClouds(color, n){
+    for(let i=0;i<n;i++){
+      const c=new THREE.Mesh(new THREE.SphereGeometry(1.2+Math.random(),8,6),
+        new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.35}));
+      c.scale.set(2+Math.random()*2, 0.6, 1);
+      c.position.set((Math.random()-0.5)*40, 10+Math.random()*6, -14-Math.random()*4);
+      scene.add(c);
+    }
+  }
+
   // Floor
   const fm=new THREE.MeshStandardMaterial({color:map.floor,roughness:0.85,metalness:theme==='neon'?0.3:0.1});
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(36,18),fm);
@@ -2966,6 +3079,8 @@ function buildArena(ch1,ch2){
   const pm=new THREE.MeshStandardMaterial({color:map.pillar,roughness:0.75,metalness:0.15});
 
   if(theme==='neon'){
+    addSky(['#020210','#0a0a2e','#1a0033','#0d0d1e'], 60);
+    addClouds(0x220044, 5);
     [-12,0,12].forEach(x=>{
       const p=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.45,14,6),pm);p.position.set(x,6,-8);p.castShadow=true;scene.add(p);
       const gc=x<0?ch1.c1:(x>0?ch2.c1:map.accent);
@@ -2978,6 +3093,9 @@ function buildArena(ch1,ch2){
       bar.position.set(i*4.5,10,-9);scene.add(bar);
     }
   } else if(theme==='volcano'){
+    addSky(['#1a0500','#3a1000','#5a2000','#2a0a00'], 0);
+    addHills(0x2a1000, 8);
+    addClouds(0x3a1a0a, 4);
     // Lava pools
     for(let i=0;i<5;i++){
       const lava=new THREE.Mesh(new THREE.CircleGeometry(1.2+Math.random(),16),new THREE.MeshBasicMaterial({color:0xff4400,transparent:true,opacity:0.5}));
@@ -2991,6 +3109,9 @@ function buildArena(ch1,ch2){
       rock.position.set(x,h/2,-8);rock.castShadow=true;scene.add(rock);
     });
   } else if(theme==='ice'){
+    addSky(['#0a1520','#1a3040','#2a5060','#0d1a22'], 30);
+    addHills(0x1a3a4a, 6);
+    addClouds(0xffffff, 8);
     // Ice crystals
     for(let i=0;i<8;i++){
       const crystal=new THREE.Mesh(new THREE.ConeGeometry(0.3+Math.random()*0.3,2+Math.random()*3,5),
@@ -3003,6 +3124,9 @@ function buildArena(ch1,ch2){
       p.position.set(x,6,-9);scene.add(p);
     });
   } else if(theme==='forest'){
+    addSky(['#040a04','#0a1a0a','#1a2a15','#0d1a0d'], 15);
+    addHills(0x1a2a10, 7);
+    addClouds(0x2a3a20, 6);
     // Trees
     for(let i=-14;i<=14;i+=3.5){
       const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.35,5+Math.random()*4,6),new THREE.MeshStandardMaterial({color:0x3e2723,roughness:0.9}));
@@ -3011,6 +3135,9 @@ function buildArena(ch1,ch2){
       foliage.position.set(trunk.position.x,trunk.position.y+3,trunk.position.z);scene.add(foliage);
     }
   } else if(theme==='desert'){
+    addSky(['#1a1208','#3a2a10','#5a4020','#c4a060'], 0);
+    addHills(0xc4a35a, 10);
+    addClouds(0xffe0a0, 3);
     // Sand dunes (low mounds)
     for(let i=0;i<6;i++){
       const dune=new THREE.Mesh(new THREE.SphereGeometry(2+Math.random(),8,6),new THREE.MeshStandardMaterial({color:0xc4a35a,roughness:1}));
@@ -3022,6 +3149,7 @@ function buildArena(ch1,ch2){
       const p=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,h,8),pm);p.position.set(x,h/2,-8);scene.add(p);
     });
   } else if(theme==='space'){
+    addSky(['#000008','#050520','#0a0a30','#000010'], 120);
     // Platform edge glow
     const edge=new THREE.Mesh(new THREE.RingGeometry(16,16.5,48),new THREE.MeshBasicMaterial({color:map.accent,transparent:true,opacity:0.4,side:THREE.DoubleSide}));
     edge.rotation.x=-Math.PI/2;edge.position.y=0.05;scene.add(edge);
@@ -3037,6 +3165,8 @@ function buildArena(ch1,ch2){
       star.position.set((Math.random()-0.5)*50,5+Math.random()*20,-20-Math.random()*15);scene.add(star);
     }
   } else if(theme==='dojo'){
+    addSky(['#0c0a06','#1a1510','#2a2015','#1a120a'], 0);
+    addClouds(0xffe8c8, 3);
     // Wooden floor strips
     for(let i=-8;i<=8;i++){
       const strip=new THREE.Mesh(new THREE.BoxGeometry(36,0.01,0.8),new THREE.MeshStandardMaterial({color:i%2?0x5d4037:0x4e342e,roughness:0.8}));
@@ -3054,6 +3184,9 @@ function buildArena(ch1,ch2){
       const pl=new THREE.PointLight(0xffaa44,1.5,7);pl.position.set(x,8,-8);scene.add(pl);
     });
   } else if(theme==='ruins'){
+    addSky(['#0e0c0a','#1a1814','#2a2820','#1a1814'], 10);
+    addHills(0x2a2820, 6);
+    addClouds(0xbbaa88, 4);
     // Broken columns
     [-13,-6,1,8,14].forEach((x,i)=>{
       const h=3+Math.random()*7;
@@ -3490,8 +3623,40 @@ class Fighter{
     if(input.sweep&&this.stamina>=12&&!this._isBusy()){this.stamina-=12;this.setState(STATES.SWEEP);playHit('whoosh');}
     if(input.uppercut&&this.stamina>=18&&!this._isBusy()){this.stamina-=18;this.setState(STATES.UPPERCUT);playHit('whoosh');}
     if(input.elbow&&this.stamina>=6&&!this._isBusy()){this.stamina-=6;this.setState(STATES.ELBOW);playHit('whoosh');}
-    if(input.punch&&!this._isBusy()&&this.stamina>=8){this.stamina-=8;this.setState(STATES.PUNCH);playHit('whoosh');}
-    if(input.kick&&!this._isBusy()&&this.stamina>=10){this.stamina-=10;this.setState(STATES.KICK);playHit('whoosh');}
+    // Combo automático: segurar soco encadeia golpes (punch→elbow→punch→heavy)
+    if(input.punch&&!this._isBusy()&&this.stamina>=8){
+      this.stamina-=8;this.setState(STATES.PUNCH);playHit('whoosh');
+      this._holdPunch=true; this._punchChain=0;
+    }
+    if(input.kick&&!this._isBusy()&&this.stamina>=10){
+      this.stamina-=10;this.setState(STATES.KICK);playHit('whoosh');
+      this._holdKick=true; this._kickChain=0;
+    }
+    // Continuar cadeia enquanto segura o botão (com intervalo)
+    this._chainCd=Math.max(0,(this._chainCd||0)-1/60);
+    if(this._holdPunch && input.punch && !this._isBusy() && this.stamina>=6 && this._chainCd<=0){
+      this._punchChain=(this._punchChain||0)+1;
+      const chain=['elbow','punch','heavy','uppercut','punch'];
+      const next=chain[Math.min(this._punchChain-1, chain.length-1)];
+      const cost={punch:6,elbow:6,heavy:12,uppercut:14};
+      if(this.stamina>=(cost[next]||8)){
+        this.stamina-=(cost[next]||8);
+        this._chainCd=0.22;
+        if(next==='elbow') this.setState(STATES.ELBOW);
+        else if(next==='heavy') this.setState(STATES.HEAVY);
+        else if(next==='uppercut') this.setState(STATES.UPPERCUT);
+        else this.setState(STATES.PUNCH);
+        playHit('whoosh');
+      }
+    }
+    if(!input.punch){ this._holdPunch=false; this._punchChain=0; }
+    if(this._holdKick && input.kick && !this._isBusy() && this.stamina>=8 && this._chainCd<=0){
+      this._kickChain=(this._kickChain||0)+1;
+      this._chainCd=0.28;
+      if(this._kickChain%2===1){ this.stamina-=8; this.setState(STATES.SWEEP); playHit('whoosh'); }
+      else { this.stamina-=10; this.setState(STATES.KICK); playHit('whoosh'); }
+    }
+    if(!input.kick){ this._holdKick=false; this._kickChain=0; }
     const now=performance.now();let dashDir=0;
     if(input.left){if(this.lastDirKey==='left'&&now-this.lastDirTime<200&&this.dashCooldown<=0){dashDir=-1;this.dashCooldown=0.7;}else if(this.lastDirKey!=='left'||now-this.lastDirTime>200){this.lastDirKey='left';this.lastDirTime=now;}}
     else if(input.right){if(this.lastDirKey==='right'&&now-this.lastDirTime<200&&this.dashCooldown<=0){dashDir=1;this.dashCooldown=0.7;}else if(this.lastDirKey!=='right'||now-this.lastDirTime>200){this.lastDirKey='right';this.lastDirTime=now;}}
@@ -4035,6 +4200,18 @@ function gameLoop(ts){
   p1.physicsStep(dt);p2.physicsStep(dt);
   if(roundActive&&!gameOver){checkCombat();updateProjectiles(dt);}
   p1.animate(dt);p2.animate(dt);
+  // Nomes flutuando acima dos lutadores
+  if(camera && p1 && p2){
+    [[p1,'name-tag-p1'],[p2,'name-tag-p2']].forEach(([f,id])=>{
+      const el=document.getElementById(id);
+      if(!el) return;
+      const wp=new THREE.Vector3(f.pos.x, f.pos.y+FIGHTER_GROUND_Y+1.15, f.pos.z);
+      wp.project(camera);
+      const x=(wp.x*0.5+0.5)*innerWidth, y=(-wp.y*0.5+0.5)*innerHeight;
+      if(wp.z>1){ el.style.opacity='0'; return; }
+      el.style.left=x+'px'; el.style.top=y+'px'; el.style.opacity='0.95';
+    });
+  }
   updateSys(sys1,dt);updateSys(sys2,dt);
   if(comboFadeTimer>0){comboFadeTimer-=rawDt;if(comboFadeTimer<=0){document.getElementById('combo-display').style.opacity=0;if(currentComboOwner===1)p1.combo=0;else p2.combo=0;}}
   const midX=(p1.pos.x+p2.pos.x)/2,dist=Math.abs(p1.pos.x-p2.pos.x);
@@ -4065,6 +4242,9 @@ function startGame(){
   document.getElementById('p1-name').style.color='#'+ch1.c1.toString(16).padStart(6,'0');
   document.getElementById('p2-name').textContent=ch2.name+' '+ch2.icon;
   document.getElementById('p2-name').style.color='#'+ch2.c1.toString(16).padStart(6,'0');
+  const nt1=document.getElementById('name-tag-p1'), nt2=document.getElementById('name-tag-p2');
+  if(nt1){ nt1.textContent=ch1.icon+' '+ch1.name; nt1.style.color='#'+ch1.c1.toString(16).padStart(6,'0'); }
+  if(nt2){ nt2.textContent=ch2.icon+' '+ch2.name; nt2.style.color='#'+ch2.c1.toString(16).padStart(6,'0'); }
   document.getElementById('hp1-fill').style.background=ch1.hpGrad;
   document.getElementById('hp2-fill').style.background=ch2.hpGrad;
   document.getElementById('hp1-ghost').style.background=ch1.hpGrad;
