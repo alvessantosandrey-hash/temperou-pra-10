@@ -255,6 +255,32 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
 #fatality-scene.active{display:block;}
 /* Partículas de sangue via canvas */
 #fatality-blood-particles{position:absolute;inset:0;pointer-events:none;z-index:59;}
+
+/* ═══ MAP SELECT ═══ */
+#map-screen{position:fixed;inset:0;z-index:110;background:#050508;display:none;flex-direction:column;overflow:hidden;}
+#map-screen.show{display:flex;}
+.map-top{padding:16px 20px 8px;text-align:center;flex-shrink:0;}
+.map-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,5vw,48px);letter-spacing:8px;background:linear-gradient(90deg,#ffd600,#fff,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.map-sub{font-size:11px;letter-spacing:4px;color:rgba(255,255,255,0.3);margin-top:4px;text-transform:uppercase;}
+.map-grid{flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;padding:12px 20px;overflow-y:auto;align-content:start;}
+.map-card{border-radius:8px;border:2px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.5);cursor:pointer;overflow:hidden;transition:transform 0.15s,border-color 0.15s,box-shadow 0.15s;position:relative;min-height:140px;display:flex;flex-direction:column;}
+.map-card:hover{transform:scale(1.04) translateY(-3px);border-color:rgba(255,255,255,0.4);box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+.map-card.selected{border-color:#ffd600;box-shadow:0 0 20px rgba(255,214,0,0.4),inset 0 0 30px rgba(255,214,0,0.08);}
+.map-preview{flex:1;min-height:90px;position:relative;display:flex;align-items:center;justify-content:center;font-size:42px;}
+.map-preview::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.7));}
+.map-info{padding:8px 10px;position:relative;z-index:1;}
+.map-name{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:#fff;}
+.map-desc{font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;line-height:1.3;}
+.map-footer{padding:10px 20px 18px;display:flex;align-items:center;justify-content:center;gap:16px;flex-shrink:0;}
+.map-back-btn{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:3px;padding:8px 20px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.5);cursor:pointer;border-radius:4px;}
+.map-back-btn:hover{border-color:#fff;color:#fff;}
+.map-fight-btn{font-family:'Bebas Neue',sans-serif;font-size:clamp(18px,2.5vw,26px);letter-spacing:8px;padding:10px 40px;border:2px solid #ffd600;color:#ffd600;background:transparent;cursor:pointer;border-radius:4px;transition:all 0.2s;position:relative;overflow:hidden;}
+.map-fight-btn:disabled{opacity:0.25;cursor:not-allowed;}
+.map-fight-btn:not(:disabled):hover{color:#000;background:#ffd600;}
+.map-fight-btn.ready{animation:startPulse 1s ease-in-out infinite alternate;box-shadow:0 0 20px rgba(255,214,0,0.4);}
+.map-check{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:#ffd600;color:#000;font-size:12px;display:none;align-items:center;justify-content:center;z-index:2;font-weight:bold;}
+.map-card.selected .map-check{display:flex;}
+
 </style>
 </head>
 <body>
@@ -305,6 +331,19 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
     </div>
   </div>
 </div>
+
+<div id="map-screen">
+  <div class="map-top">
+    <div class="map-title">ESCOLHA O MAPA</div>
+    <div class="map-sub">Selecione o campo de batalha</div>
+  </div>
+  <div class="map-grid" id="map-grid"></div>
+  <div class="map-footer">
+    <button class="map-back-btn" id="map-back-btn">← PERSONAGENS</button>
+    <button class="map-fight-btn" id="map-fight-btn" disabled>⚔ FIGHT</button>
+  </div>
+</div>
+
 <div id="vs-screen">
   <div class="vs-left" id="vs-left">
     <div class="vs-bar-p1"></div>
@@ -367,6 +406,7 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
   <div id="fatality-input-ui">
     <div id="fatality-winner-prompt"></div>
     <div id="fatality-prompt">☠ INSIRA O CÓDIGO FATALITY ☠</div>
+    <div id="fatality-gp-hint" style="font-size:9px;letter-spacing:2px;color:rgba(255,100,100,0.45);margin-top:4px">🎮 D-PAD / STICK = direções · A X Y B = botão final</div>
     <div id="fatality-keys"></div>
     <div id="fatality-timer-bar"><div id="fatality-timer-fill"></div></div>
   </div>
@@ -1088,6 +1128,12 @@ function showFatalityPrompt(winner) {
   fatalityState.progress = 0;
   fatalityState.timeLeft = 6;
   fatalityState.executed = false;
+  // Reset edge-detect do gamepad para o código Fatality
+  if(typeof fatalityGp !== 'undefined'){
+    fatalityGp.lastDir = [null, null];
+    fatalityGp.lastBtn = [false, false];
+    fatalityGp.lastNav = [0, 0];
+  }
   const winCh = winner===1 ? (p1?p1.ch:null) : (p2?p2.ch:null);
   fatalityState.sequence = winCh ? getFatalitySequence(winner, winCh) : ['up','down','left','right', winner===1?'F':'K'];
   const faText = document.getElementById('fa-text');
@@ -2109,26 +2155,10 @@ function playFatalitySFX(){
     osc3.start(ac.currentTime+0.1);osc3.stop(ac.currentTime+1.5);
   }catch(e){}
 }
-function processFatalityKey(code){
-  if(!fatalityState.active || fatalityState.executed) return;
+function processFatalityInput(dir){
+  if(!fatalityState.active || fatalityState.executed || !dir) return;
   const seq = fatalityState.sequence || [];
   const expected = seq[fatalityState.progress];
-  let dir = null;
-  const w = fatalityState.winner;
-  if(w===1){
-    if(code==='KeyW') dir='up';
-    else if(code==='KeyS') dir='down';
-    else if(code==='KeyA') dir='left';
-    else if(code==='KeyD') dir='right';
-    else if(code==='KeyF') dir='F';
-  } else {
-    if(code==='ArrowUp') dir='up';
-    else if(code==='ArrowDown') dir='down';
-    else if(code==='ArrowLeft') dir='left';
-    else if(code==='ArrowRight') dir='right';
-    else if(code==='KeyK') dir='K';
-  }
-  if(dir === null) return;
   if(dir === expected){
     fatalityState.progress++;
     updateFatalityKeyUI(fatalityState.progress);
@@ -2152,6 +2182,79 @@ function processFatalityKey(code){
     }catch(e){}
   }
 }
+function processFatalityKey(code){
+  if(!fatalityState.active || fatalityState.executed) return;
+  let dir = null;
+  const w = fatalityState.winner;
+  if(w===1){
+    if(code==='KeyW') dir='up';
+    else if(code==='KeyS') dir='down';
+    else if(code==='KeyA') dir='left';
+    else if(code==='KeyD') dir='right';
+    else if(code==='KeyF'||code==='Space') dir='F';
+  } else {
+    if(code==='ArrowUp') dir='up';
+    else if(code==='ArrowDown') dir='down';
+    else if(code==='ArrowLeft') dir='left';
+    else if(code==='ArrowRight') dir='right';
+    else if(code==='KeyK'||code==='KeyL') dir='K';
+  }
+  if(dir) processFatalityInput(dir);
+}
+// ── Fatality via USB Gamepad (padrão universal) ──
+// D-pad / stick = direções | A/X/□ = botão final F/K
+const fatalityGp = {
+  lastDir: [null, null],
+  lastBtn: [false, false],
+  lastNav: [0, 0],
+  cooldown: 160,
+};
+function pollFatalityGamepad(){
+  if(!fatalityState.active || fatalityState.executed) return;
+  const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+  const w = fatalityState.winner; // 1 or 2
+  if(!w) return;
+  const pid = w - 1; // gamepad index 0 for P1, 1 for P2
+  // Aceita o controle do vencedor; se só houver 1, usa o 0
+  let gp = gps[pid] || gps[0];
+  if(!gp) return;
+  const now = performance.now();
+  // Direções: D-pad (12/13/14/15) ou stick esquerdo
+  let dir = null;
+  const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0;
+  const dead = 0.5;
+  if(gp.buttons[12]?.pressed || ay < -dead) dir = 'up';
+  else if(gp.buttons[13]?.pressed || ay > dead) dir = 'down';
+  else if(gp.buttons[14]?.pressed || ax < -dead) dir = 'left';
+  else if(gp.buttons[15]?.pressed || ax > dead) dir = 'right';
+  // Botão final: A(0), X/□(2), Y/△(3), B(1), L1(4), R1(5) — qualquer face button
+  const finPressed = !!(
+    gp.buttons[0]?.pressed || gp.buttons[1]?.pressed ||
+    gp.buttons[2]?.pressed || gp.buttons[3]?.pressed ||
+    gp.buttons[4]?.pressed || gp.buttons[5]?.pressed
+  );
+  const finalKey = w === 1 ? 'F' : 'K';
+  // Só registra direção se mudou / passou cooldown (evita spam do stick)
+  if(dir && dir !== fatalityGp.lastDir[pid] && now - fatalityGp.lastNav[pid] > fatalityGp.cooldown){
+    fatalityGp.lastDir[pid] = dir;
+    fatalityGp.lastNav[pid] = now;
+    processFatalityInput(dir);
+  } else if(!dir){
+    fatalityGp.lastDir[pid] = null;
+  }
+  // Botão final: edge detect (pressionou agora, antes estava solto)
+  if(finPressed && !fatalityGp.lastBtn[pid] && now - fatalityGp.lastNav[pid] > 80){
+    fatalityGp.lastBtn[pid] = true;
+    fatalityGp.lastNav[pid] = now;
+    processFatalityInput(finalKey);
+  } else if(!finPressed){
+    fatalityGp.lastBtn[pid] = false;
+  }
+}
+(function fatalityGpLoop(){
+  pollFatalityGamepad();
+  requestAnimationFrame(fatalityGpLoop);
+})();
 // ══════════════════════════════════════════════════════
 //  MENU BACKGROUND
 // ══════════════════════════════════════════════════════
@@ -2413,7 +2516,13 @@ function updatePreview(id, idx, color) {
     </div>`;
 }
 buildCharGrid();
-document.getElementById('start-btn').addEventListener('click', showVsScreen);
+document.getElementById('start-btn').addEventListener('click', showMapScreen);
+document.getElementById('map-fight-btn').addEventListener('click', ()=>{ if(selectedMap!=null) showVsScreen(); });
+document.getElementById('map-back-btn').addEventListener('click', ()=>{
+  hideMapScreen();
+  document.getElementById('select-screen').classList.remove('hidden');
+  gpSelect.active = true;
+});
 
 // ══════════════════════════════════════════════════════
 //  GAMEPAD CHARACTER SELECT (USB universal)
@@ -2461,7 +2570,7 @@ function gpSelectPoll(){
     // Start / Options (button 9 or 8) to fight when both selected
     if((gp.buttons[9]?.pressed || gp.buttons[8]?.pressed) && selected[0]!==null && selected[1]!==null && now-gpSelect.lastConfirm[pid]>500){
       gpSelect.lastConfirm[pid]=now;
-      showVsScreen();
+      showMapScreen();
     }
   }
 }
@@ -2489,8 +2598,85 @@ function highlightGpCursor(pid, idx){
 window.addEventListener('gamepadconnected', e=>{
   console.log('Gamepad connected:', e.gamepad.id);
 });
+// ══════════════════════════════════════════════════════
+//  MAPAS / ARENAS
+// ══════════════════════════════════════════════════════
+const MAPS = [
+  { id:'neon', name:'ARENA NEON', icon:'🌃', desc:'Ring cyberpunk com luzes neon.',
+    floor:0x0d0d1e, fog:0x080812, fogDensity:0.025, clear:0x060810,
+    ambient:0x151525, dirLight:0xffffff, accent:0x00e5ff, accent2:0xff6600,
+    pillar:0x0d0d1a, bg:0x0b0b18, theme:'neon' },
+  { id:'volcano', name:'VULCÃO', icon:'🌋', desc:'Chão de lava e rochas em brasa.',
+    floor:0x1a0800, fog:0x1a0500, fogDensity:0.03, clear:0x120300,
+    ambient:0x2a1008, dirLight:0xffccaa, accent:0xff4400, accent2:0xffaa00,
+    pillar:0x2a1000, bg:0x1a0800, theme:'volcano' },
+  { id:'ice', name:'TEMPLO DE GELO', icon:'❄️', desc:'Catedral congelada e cristais.',
+    floor:0x0a1a22, fog:0x0a1520, fogDensity:0.022, clear:0x061018,
+    ambient:0x152030, dirLight:0xcceeff, accent:0x80deea, accent2:0xffffff,
+    pillar:0x1a2a33, bg:0x0d1a22, theme:'ice' },
+  { id:'forest', name:'FLORESTA SOMBRIA', icon:'🌲', desc:'Clareira entre árvores antigas.',
+    floor:0x0d1a0d, fog:0x061006, fogDensity:0.035, clear:0x040a04,
+    ambient:0x101a10, dirLight:0xaacc88, accent:0x00e676, accent2:0x33691e,
+    pillar:0x1a2a10, bg:0x0a150a, theme:'forest' },
+  { id:'desert', name:'DESERTO', icon:'🏜️', desc:'Dunas e ruínas sob o sol.',
+    floor:0x2a1a08, fog:0x1a1208, fogDensity:0.02, clear:0x1a1208,
+    ambient:0x2a2010, dirLight:0xffe0a0, accent:0xffcc02, accent2:0xffa000,
+    pillar:0x3a2a10, bg:0x2a1a08, theme:'desert' },
+  { id:'space', name:'ESTAÇÃO ORBITAL', icon:'🚀', desc:'Plataforma no vazio espacial.',
+    floor:0x0a0a18, fog:0x050510, fogDensity:0.018, clear:0x020208,
+    ambient:0x0a0a20, dirLight:0xccd0ff, accent:0x00b0ff, accent2:0xaa00ff,
+    pillar:0x12122a, bg:0x050510, theme:'space' },
+  { id:'dojo', name:'DOJO', icon:'🏯', desc:'Academia tradicional de combate.',
+    floor:0x1a120a, fog:0x100c08, fogDensity:0.028, clear:0x0c0a06,
+    ambient:0x1a1510, dirLight:0xffe8c8, accent:0xffd600, accent2:0xc62828,
+    pillar:0x2a1a10, bg:0x120e08, theme:'dojo' },
+  { id:'ruins', name:'RUÍNAS ANTIGAS', icon:'🏛️', desc:'Templo esquecido em pedra.',
+    floor:0x1a1814, fog:0x12100c, fogDensity:0.03, clear:0x0e0c0a,
+    ambient:0x1a1814, dirLight:0xe8e0d0, accent:0xa1887f, accent2:0xffd600,
+    pillar:0x2a2820, bg:0x14120e, theme:'ruins' },
+];
+let selectedMap = 0;
+
+function buildMapGrid(){
+  const grid = document.getElementById('map-grid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  MAPS.forEach((m, idx)=>{
+    const card = document.createElement('div');
+    card.className = 'map-card' + (idx===selectedMap?' selected':'');
+    card.dataset.idx = idx;
+    const bgGrad = 'linear-gradient(160deg, #'+m.floor.toString(16).padStart(6,'0')+' 0%, #'+m.clear.toString(16).padStart(6,'0')+' 100%)';
+    card.innerHTML = '<div class="map-check">✓</div><div class="map-preview" style="background:'+bgGrad+'">'+m.icon+'</div><div class="map-info"><div class="map-name" style="color:#'+m.accent.toString(16).padStart(6,'0')+'">'+m.name+'</div><div class="map-desc">'+m.desc+'</div></div>';
+    card.addEventListener('click', ()=>{
+      selectedMap = idx;
+      document.querySelectorAll('.map-card').forEach(c=>c.classList.remove('selected'));
+      card.classList.add('selected');
+      const btn = document.getElementById('map-fight-btn');
+      if(btn){ btn.disabled=false; btn.classList.add('ready'); }
+      try{playMenu('hover');}catch(e){}
+    });
+    grid.appendChild(card);
+  });
+  const btn = document.getElementById('map-fight-btn');
+  if(btn){ btn.disabled=false; btn.classList.add('ready'); }
+}
+
+function showMapScreen(){
+  if(selected[0]===null||selected[1]===null) return;
+  playMenu('select');
+  document.getElementById('select-screen').classList.add('hidden');
+  gpSelect.active = false;
+  buildMapGrid();
+  document.getElementById('map-screen').classList.add('show');
+}
+
+function hideMapScreen(){
+  document.getElementById('map-screen').classList.remove('show');
+}
+
 function showVsScreen() {
   if (selected[0]===null||selected[1]===null) return;
+  hideMapScreen();
   playMenu('start');
   const ch1=CHARACTERS[selected[0]], ch2=CHARACTERS[selected[1]];
   document.getElementById('vs-icon1').textContent = ch1.icon;
@@ -2512,7 +2698,7 @@ function hexStr(n, a=1){
 // ══════════════════════════════════════════════════════
 //  THREE.JS ENGINE
 // ══════════════════════════════════════════════════════
-const FLOOR_Y=0, GRAVITY=-38, ARENA_X_MIN=-17, ARENA_X_MAX=17, FIGHTER_GROUND_Y=1.38;
+const FLOOR_Y=0, GRAVITY=-38, ARENA_X_MIN=-17, ARENA_X_MAX=17, FIGHTER_GROUND_Y=2.16;
 const MAX_SUPER = 100;
 let scene,renderer,camera;
 let p1,p2,sys1,sys2;
@@ -2662,40 +2848,166 @@ function initThree(){
   window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 }
 function buildArena(ch1,ch2){
-  const fm=new THREE.MeshStandardMaterial({color:0x0d0d1e,roughness:0.9,metalness:0.1});
+  const map = MAPS[selectedMap] || MAPS[0];
+  const theme = map.theme;
+  // Floor
+  const fm=new THREE.MeshStandardMaterial({color:map.floor,roughness:0.85,metalness:theme==='neon'?0.3:0.1});
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(36,18),fm);
   fl.rotation.x=-Math.PI/2;fl.position.y=FLOOR_Y;fl.receiveShadow=true;scene.add(fl);
-  const gL=new THREE.GridHelper(18,9,ch1.c1,0x111122);gL.position.set(-9,0.01,0);gL.material.opacity=0.22;gL.material.transparent=true;scene.add(gL);
-  const gR=new THREE.GridHelper(18,9,ch2.c1,0x111122);gR.position.set(9,0.01,0);gR.material.opacity=0.22;gR.material.transparent=true;scene.add(gR);
-  const lm=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.1});
-  const ln=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.02,18),lm);ln.position.set(0,0.02,0);scene.add(ln);
-  const em=new THREE.MeshBasicMaterial({color:ch1.c1,transparent:true,opacity:0.45});
-  [-18,18].forEach(x=>{const e=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.06,18),em);e.position.set(x,0.03,0);scene.add(e);});
-  const pm=new THREE.MeshStandardMaterial({color:0x0d0d1a,roughness:0.8});
-  [-12,0,12].forEach(x=>{
-    const p=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,14,6),pm);p.position.set(x,6,-8);p.castShadow=true;p.receiveShadow=true;scene.add(p);
-    const gc=x<0?ch1.c1:(x>0?ch2.c1:0xffffff);
-    const g=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,0.2,6),new THREE.MeshBasicMaterial({color:gc}));g.position.set(x,13.1,-8);scene.add(g);
-    if(x!==0){const pl=new THREE.PointLight(gc,1.0,7);pl.position.set(x,12,-8);scene.add(pl);}
-  });
-  const crowdM=new THREE.MeshBasicMaterial({color:0x0b0b18,side:THREE.DoubleSide});
-  for(let i=-14;i<=14;i+=2.2){
-    const h=1.5+Math.random()*1.5;
-    const c=new THREE.Mesh(new THREE.PlaneGeometry(1.2,h),crowdM);
-    c.position.set(i+Math.random()*0.3,(h/2)-0.5,-9.3);scene.add(c);
+
+  // Center line / ring marks
+  const ringM=new THREE.MeshBasicMaterial({color:map.accent,transparent:true,opacity:0.25});
+  const ring=new THREE.Mesh(new THREE.RingGeometry(7.5,7.7,48),ringM);
+  ring.rotation.x=-Math.PI/2;ring.position.y=0.02;scene.add(ring);
+  const ln=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.02,16),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.12}));
+  ln.position.set(0,0.02,0);scene.add(ln);
+
+  // Side color strips (fighter colors)
+  const em1=new THREE.MeshBasicMaterial({color:ch1.c1,transparent:true,opacity:0.4});
+  const em2=new THREE.MeshBasicMaterial({color:ch2.c1,transparent:true,opacity:0.4});
+  const e1=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.05,18),em1);e1.position.set(-17.5,0.03,0);scene.add(e1);
+  const e2=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.05,18),em2);e2.position.set(17.5,0.03,0);scene.add(e2);
+
+  // Grid accents
+  const gL=new THREE.GridHelper(16,8,map.accent,0x111122);gL.position.set(-8,0.015,0);gL.material.opacity=0.18;gL.material.transparent=true;scene.add(gL);
+  const gR=new THREE.GridHelper(16,8,map.accent2,0x111122);gR.position.set(8,0.015,0);gR.material.opacity=0.18;gR.material.transparent=true;scene.add(gR);
+
+  const pm=new THREE.MeshStandardMaterial({color:map.pillar,roughness:0.75,metalness:0.15});
+
+  if(theme==='neon'){
+    [-12,0,12].forEach(x=>{
+      const p=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.45,14,6),pm);p.position.set(x,6,-8);p.castShadow=true;scene.add(p);
+      const gc=x<0?ch1.c1:(x>0?ch2.c1:map.accent);
+      const g=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.14,0.25,6),new THREE.MeshBasicMaterial({color:gc}));g.position.set(x,13.1,-8);scene.add(g);
+      if(x!==0){const pl=new THREE.PointLight(gc,1.2,8);pl.position.set(x,12,-8);scene.add(pl);}
+    });
+    // Neon bars
+    for(let i=-3;i<=3;i++){
+      const bar=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.08,10),new THREE.MeshBasicMaterial({color:i%2?map.accent:map.accent2,transparent:true,opacity:0.5}));
+      bar.position.set(i*4.5,10,-9);scene.add(bar);
+    }
+  } else if(theme==='volcano'){
+    // Lava pools
+    for(let i=0;i<5;i++){
+      const lava=new THREE.Mesh(new THREE.CircleGeometry(1.2+Math.random(),16),new THREE.MeshBasicMaterial({color:0xff4400,transparent:true,opacity:0.5}));
+      lava.rotation.x=-Math.PI/2;lava.position.set(-12+i*6,0.03,-4+Math.random()*3);scene.add(lava);
+      const pl=new THREE.PointLight(0xff4400,1.5,6);pl.position.set(lava.position.x,1.5,lava.position.z);scene.add(pl);
+    }
+    // Rock pillars
+    [-14,-7,0,7,14].forEach(x=>{
+      const h=4+Math.random()*6;
+      const rock=new THREE.Mesh(new THREE.CylinderGeometry(0.6+Math.random()*0.4,0.9,h,5),pm);
+      rock.position.set(x,h/2,-8);rock.castShadow=true;scene.add(rock);
+    });
+  } else if(theme==='ice'){
+    // Ice crystals
+    for(let i=0;i<8;i++){
+      const crystal=new THREE.Mesh(new THREE.ConeGeometry(0.3+Math.random()*0.3,2+Math.random()*3,5),
+        new THREE.MeshStandardMaterial({color:0xaaddff,transparent:true,opacity:0.7,roughness:0.2,metalness:0.4}));
+      crystal.position.set(-14+i*4,1.2,-8);crystal.rotation.z=(Math.random()-0.5)*0.3;scene.add(crystal);
+    }
+    // Ice pillars
+    [-12,0,12].forEach(x=>{
+      const p=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.7,12,6),new THREE.MeshStandardMaterial({color:0x1a3a4a,roughness:0.3,metalness:0.5}));
+      p.position.set(x,6,-9);scene.add(p);
+    });
+  } else if(theme==='forest'){
+    // Trees
+    for(let i=-14;i<=14;i+=3.5){
+      const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.35,5+Math.random()*4,6),new THREE.MeshStandardMaterial({color:0x3e2723,roughness:0.9}));
+      trunk.position.set(i+Math.random(),2.5,-9);scene.add(trunk);
+      const foliage=new THREE.Mesh(new THREE.SphereGeometry(1.2+Math.random()*0.6,8,6),new THREE.MeshStandardMaterial({color:0x1b5e20,roughness:0.85}));
+      foliage.position.set(trunk.position.x,trunk.position.y+3,trunk.position.z);scene.add(foliage);
+    }
+  } else if(theme==='desert'){
+    // Sand dunes (low mounds)
+    for(let i=0;i<6;i++){
+      const dune=new THREE.Mesh(new THREE.SphereGeometry(2+Math.random(),8,6),new THREE.MeshStandardMaterial({color:0xc4a35a,roughness:1}));
+      dune.scale.y=0.25;dune.position.set(-12+i*5,0.2,-7);scene.add(dune);
+    }
+    // Ruined pillars
+    [-10,-3,4,11].forEach(x=>{
+      const h=3+Math.random()*5;
+      const p=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,h,8),pm);p.position.set(x,h/2,-8);scene.add(p);
+    });
+  } else if(theme==='space'){
+    // Platform edge glow
+    const edge=new THREE.Mesh(new THREE.RingGeometry(16,16.5,48),new THREE.MeshBasicMaterial({color:map.accent,transparent:true,opacity:0.4,side:THREE.DoubleSide}));
+    edge.rotation.x=-Math.PI/2;edge.position.y=0.05;scene.add(edge);
+    // Floating panels
+    for(let i=0;i<6;i++){
+      const panel=new THREE.Mesh(new THREE.BoxGeometry(2,0.1,1.5),new THREE.MeshStandardMaterial({color:0x1a1a3a,metalness:0.6,roughness:0.3}));
+      panel.position.set(-12+i*5,6+Math.sin(i)*2,-10);scene.add(panel);
+      const pl=new THREE.PointLight(i%2?map.accent:map.accent2,0.8,5);pl.position.copy(panel.position);pl.position.y+=0.5;scene.add(pl);
+    }
+    // Stars (small points far)
+    for(let i=0;i<40;i++){
+      const star=new THREE.Mesh(new THREE.SphereGeometry(0.05,4,4),new THREE.MeshBasicMaterial({color:0xffffff}));
+      star.position.set((Math.random()-0.5)*50,5+Math.random()*20,-20-Math.random()*15);scene.add(star);
+    }
+  } else if(theme==='dojo'){
+    // Wooden floor strips
+    for(let i=-8;i<=8;i++){
+      const strip=new THREE.Mesh(new THREE.BoxGeometry(36,0.01,0.8),new THREE.MeshStandardMaterial({color:i%2?0x5d4037:0x4e342e,roughness:0.8}));
+      strip.position.set(0,0.01,i*1.1);scene.add(strip);
+    }
+    // Paper walls / pillars
+    [-14,-7,0,7,14].forEach(x=>{
+      const p=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.35,10,8),new THREE.MeshStandardMaterial({color:0x5d4037,roughness:0.7}));
+      p.position.set(x,5,-9);scene.add(p);
+    });
+    // Lanterns
+    [-10,0,10].forEach(x=>{
+      const lan=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.7,0.5),new THREE.MeshBasicMaterial({color:0xffaa44,transparent:true,opacity:0.7}));
+      lan.position.set(x,8,-8);scene.add(lan);
+      const pl=new THREE.PointLight(0xffaa44,1.5,7);pl.position.set(x,8,-8);scene.add(pl);
+    });
+  } else if(theme==='ruins'){
+    // Broken columns
+    [-13,-6,1,8,14].forEach((x,i)=>{
+      const h=3+Math.random()*7;
+      const col=new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.55,h,8),pm);
+      col.position.set(x,h/2,-8);col.rotation.z=(Math.random()-0.5)*0.15;scene.add(col);
+      if(i%2===0){
+        const top=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.3,1.2),pm);top.position.set(x,h+0.15,-8);scene.add(top);
+      }
+    });
+    // Debris
+    for(let i=0;i<10;i++){
+      const d=new THREE.Mesh(new THREE.BoxGeometry(0.4+Math.random(),0.3,0.4+Math.random()),pm);
+      d.position.set((Math.random()-0.5)*28,0.2,-6-Math.random()*3);d.rotation.y=Math.random()*Math.PI;scene.add(d);
+    }
   }
+
+  // Background crowd / silhouettes
+  const crowdM=new THREE.MeshBasicMaterial({color:map.bg,side:THREE.DoubleSide});
+  for(let i=-14;i<=14;i+=2.2){
+    const h=1.5+Math.random()*1.8;
+    const c=new THREE.Mesh(new THREE.PlaneGeometry(1.2,h),crowdM);
+    c.position.set(i+Math.random()*0.3,(h/2)-0.5,-10.5);scene.add(c);
+  }
+
+  // Apply fog and clear color
+  scene.fog=new THREE.FogExp2(map.fog, map.fogDensity);
+  if(renderer) renderer.setClearColor(map.clear);
 }
+
 function buildLights(ch1,ch2){
-  scene.add(new THREE.AmbientLight(0x151525,1.2));
-  const ml=new THREE.DirectionalLight(0xffffff,1.5);ml.position.set(2,12,8);ml.castShadow=true;
+  const map = MAPS[selectedMap] || MAPS[0];
+  scene.add(new THREE.AmbientLight(map.ambient,1.15));
+  const ml=new THREE.DirectionalLight(map.dirLight,1.4);ml.position.set(2,12,8);ml.castShadow=true;
   ml.shadow.mapSize.set(1024,1024);ml.shadow.camera.left=-20;ml.shadow.camera.right=20;
   ml.shadow.camera.top=15;ml.shadow.camera.bottom=-5;ml.shadow.camera.far=60;scene.add(ml);
   rimL=new THREE.PointLight(ch1.lightColor,5,18);rimL.position.set(-10,4,2);scene.add(rimL);
   rimR=new THREE.PointLight(ch2.lightColor,5,18);rimR.position.set(10,4,2);scene.add(rimR);
   p1Light=new THREE.PointLight(ch1.lightColor,4,8);scene.add(p1Light);
   p2Light=new THREE.PointLight(ch2.lightColor,4,8);scene.add(p2Light);
-  const s=new THREE.SpotLight(0xffffff,1.5,32,0.4,0.5);s.position.set(0,16,0);s.target.position.set(0,0,0);scene.add(s);scene.add(s.target);
+  const s=new THREE.SpotLight(map.dirLight,1.3,32,0.4,0.5);s.position.set(0,16,0);s.target.position.set(0,0,0);scene.add(s);scene.add(s.target);
+  // Map accent lights
+  const al=new THREE.PointLight(map.accent,2,20);al.position.set(0,8,-6);scene.add(al);
+  const al2=new THREE.PointLight(map.accent2,1.5,15);al2.position.set(0,5,4);scene.add(al2);
 }
+
 // ══════════════════════════════════════════════════════
 //  PARTICLE SYSTEM
 // ══════════════════════════════════════════════════════
@@ -2874,65 +3186,174 @@ class Fighter{
   _build(){
     const ch=this.ch;
     this.group=new THREE.Group();
-    // Skin support: use active skin palette if present
     const pal = (ch.skins && ch.skins[ch.skinIdx||0]) ? Object.assign({}, ch, ch.skins[ch.skinIdx||0]) : ch;
-    const mat=new THREE.MeshStandardMaterial({color:pal.color,roughness:0.48,metalness:0.28,emissive:pal.emissive||ch.emissive,emissiveIntensity:0.35});
-    const skin=new THREE.MeshStandardMaterial({color:pal.skinColor||ch.skinColor,roughness:0.72});
-    const dark=new THREE.MeshStandardMaterial({color:pal.darkColor||ch.darkColor,roughness:0.5});
-    const shoe=new THREE.MeshStandardMaterial({color:pal.shoeColor||ch.shoeColor,roughness:0.4});
-    const eyeM=new THREE.MeshBasicMaterial({color:pal.eyeColor||ch.eyeColor});
-    const handM=new THREE.MeshBasicMaterial({color:pal.c1||ch.c1});
-    const accent=new THREE.MeshBasicMaterial({color:pal.c1||ch.c1});
+    // Materiais realistas
+    const skinCol = pal.skinColor||ch.skinColor;
+    const mat=new THREE.MeshStandardMaterial({color:pal.color,roughness:0.55,metalness:0.22,emissive:pal.emissive||ch.emissive,emissiveIntensity:0.28});
+    const skin=new THREE.MeshStandardMaterial({color:skinCol,roughness:0.62,metalness:0.05});
+    const skinDark=new THREE.MeshStandardMaterial({color:new THREE.Color(skinCol).multiplyScalar(0.82),roughness:0.65,metalness:0.04});
+    const dark=new THREE.MeshStandardMaterial({color:pal.darkColor||ch.darkColor,roughness:0.58,metalness:0.15});
+    const shoe=new THREE.MeshStandardMaterial({color:pal.shoeColor||ch.shoeColor,roughness:0.45,metalness:0.2});
+    const eyeWhite=new THREE.MeshStandardMaterial({color:0xf5f5f5,roughness:0.3,metalness:0.1});
+    const irisCol=pal.eyeColor||ch.eyeColor;
+    const irisM=new THREE.MeshStandardMaterial({color:irisCol,roughness:0.25,metalness:0.15,emissive:irisCol,emissiveIntensity:0.15});
+    const pupilM=new THREE.MeshBasicMaterial({color:0x0a0a0a});
+    const hairM=new THREE.MeshStandardMaterial({color:pal.c1||ch.c1,roughness:0.75,metalness:0.08,emissive:pal.c1||ch.c1,emissiveIntensity:0.12});
+    const accent=new THREE.MeshStandardMaterial({color:pal.c1||ch.c1,roughness:0.35,metalness:0.4,emissive:pal.c1||ch.c1,emissiveIntensity:0.25});
+    const lipM=new THREE.MeshStandardMaterial({color:new THREE.Color(skinCol).lerp(new THREE.Color(0xcc6666),0.35),roughness:0.5});
     this.root=new THREE.Group();this.root.position.y=FIGHTER_GROUND_Y;this.group.add(this.root);
-    // Torso mais humano (ombros largos, cintura mais estreita via dois boxes)
-    this.torso=new THREE.Group();this.torso.position.y=0.15;this.root.add(this.torso);
-    const chest=new THREE.Mesh(new THREE.BoxGeometry(1.05,0.85,0.52),mat);chest.position.y=0.28;chest.castShadow=true;this.torso.add(chest);
-    const waist=new THREE.Mesh(new THREE.BoxGeometry(0.82,0.55,0.48),mat);waist.position.y=-0.35;waist.castShadow=true;this.torso.add(waist);
-    // Ombros
-    const shoulderGeo=new THREE.SphereGeometry(0.22,8,8);
-    const shL=new THREE.Mesh(shoulderGeo,mat);shL.position.set(0.58,0.55,0);shL.castShadow=true;this.torso.add(shL);
-    const shR=new THREE.Mesh(shoulderGeo,mat);shR.position.set(-0.58,0.55,0);shR.castShadow=true;this.torso.add(shR);
-    this.emblem=new THREE.Mesh(new THREE.CircleGeometry(0.16,10),new THREE.MeshBasicMaterial({color:pal.c1||ch.c1,side:THREE.DoubleSide}));this.emblem.position.set(0,0.32,0.27);this.torso.add(this.emblem);
-    // Cabeça + pescoço
-    this.head=new THREE.Group();this.head.position.y=1.22;this.root.add(this.head);
-    const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.14,0.18,8),skin);neck.position.y=-0.28;neck.castShadow=true;this.head.add(neck);
-    const hm=new THREE.Mesh(new THREE.SphereGeometry(0.28,12,10),skin);hm.scale.set(1,1.12,0.95);hm.castShadow=true;this.head.add(hm);
-    // Olhos
-    [-0.1,0.1].forEach(ex=>{const eye=new THREE.Mesh(new THREE.SphereGeometry(0.055,6,6),eyeM);eye.position.set(ex,0.04,0.22);this.head.add(eye);});
-    // Cabelo / topo elemental
-    this.topMesh=new THREE.Mesh(new THREE.ConeGeometry(0.2,0.32,7),accent);this.topMesh.position.y=0.32;this.head.add(this.topMesh);
-    // Cinto / quadril
-    const belt=new THREE.Mesh(new THREE.BoxGeometry(0.88,0.16,0.5),dark);belt.position.y=-0.55;this.root.add(belt);
-    const hip=new THREE.Mesh(new THREE.BoxGeometry(0.78,0.22,0.42),dark);hip.position.y=-0.72;this.root.add(hip);
-    // Braços (pivot no ombro)
-    this.armPivotL=new THREE.Group();this.armPivotL.position.set(0.62,0.55,0);
-    this.armPivotR=new THREE.Group();this.armPivotR.position.set(-0.62,0.55,0);
-    const ua=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.11,0.52,6),mat);ua.position.y=-0.28;
-    const la=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.09,0.48,6),skin);la.position.y=-0.78;
-    const fi=new THREE.Mesh(new THREE.SphereGeometry(0.13,8,8),handM);fi.position.y=-1.08;
-    [this.armPivotL,this.armPivotR].forEach(a=>{a.add(ua.clone(),la.clone(),fi.clone());a.children.forEach(c=>c.castShadow=true);});
+
+    // ═══ TORSO ANATÔMICO ═══
+    this.torso=new THREE.Group();this.torso.position.y=0.12;this.root.add(this.torso);
+    // Peito (trapezoidal via scale)
+    const chest=new THREE.Mesh(new THREE.BoxGeometry(0.98,0.72,0.48),mat);
+    chest.position.y=0.32;chest.castShadow=true;chest.receiveShadow=true;this.torso.add(chest);
+    // Peitoral / volume frontal
+    const pecL=new THREE.Mesh(new THREE.SphereGeometry(0.2,10,8),mat);pecL.scale.set(1.15,0.7,0.85);pecL.position.set(0.22,0.38,0.18);pecL.castShadow=true;this.torso.add(pecL);
+    const pecR=pecL.clone();pecR.position.x=-0.22;this.torso.add(pecR);
+    // Abdômen
+    const abs=new THREE.Mesh(new THREE.BoxGeometry(0.72,0.48,0.4),mat);abs.position.y=-0.22;abs.castShadow=true;this.torso.add(abs);
+    // Linhas de abs (detalhe sutil)
+    for(let i=0;i<3;i++){
+      const row=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.04,0.38),skinDark);
+      row.position.set(0,-0.08-i*0.14,0.12);this.torso.add(row);
+    }
+    // Ombros esféricos musculares
+    const shGeo=new THREE.SphereGeometry(0.24,12,10);
+    const shL=new THREE.Mesh(shGeo,mat);shL.position.set(0.58,0.52,0);shL.castShadow=true;this.torso.add(shL);
+    const shR=new THREE.Mesh(shGeo,mat);shR.position.set(-0.58,0.52,0);shR.castShadow=true;this.torso.add(shR);
+    // Clavícula
+    const clav=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.7,6),skin);clav.rotation.z=Math.PI/2;clav.position.set(0,0.58,0.12);this.torso.add(clav);
+    // Emblema elemental no peito
+    this.emblem=new THREE.Mesh(new THREE.CircleGeometry(0.14,12),new THREE.MeshStandardMaterial({color:pal.c1||ch.c1,emissive:pal.c1||ch.c1,emissiveIntensity:0.5,side:THREE.DoubleSide,roughness:0.3}));
+    this.emblem.position.set(0,0.35,0.26);this.torso.add(this.emblem);
+
+    // ═══ CABEÇA REALISTA ═══
+    this.head=new THREE.Group();this.head.position.y=1.28;this.root.add(this.head);
+    // Pescoço
+    const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.14,0.22,10),skin);neck.position.y=-0.32;neck.castShadow=true;this.head.add(neck);
+    // Crânio
+    const skull=new THREE.Mesh(new THREE.SphereGeometry(0.27,16,14),skin);skull.scale.set(0.95,1.08,0.92);skull.castShadow=true;this.head.add(skull);
+    // Mandíbula / queixo
+    const jaw=new THREE.Mesh(new THREE.SphereGeometry(0.16,12,10),skin);jaw.scale.set(1.1,0.7,0.95);jaw.position.set(0,-0.14,0.04);this.head.add(jaw);
+    // Nariz
+    const nose=new THREE.Mesh(new THREE.ConeGeometry(0.04,0.1,6),skin);nose.rotation.x=Math.PI/2;nose.position.set(0,0.0,0.24);this.head.add(nose);
+    // Orelhas
+    [-1,1].forEach(side=>{
+      const ear=new THREE.Mesh(new THREE.SphereGeometry(0.07,8,6),skin);
+      ear.scale.set(0.45,1.1,0.7);ear.position.set(side*0.26,0.02,0);this.head.add(ear);
+    });
+    // Olhos (esfera + íris + pupila)
+    [-0.09,0.09].forEach(ex=>{
+      const eyeGroup=new THREE.Group();eyeGroup.position.set(ex,0.05,0.21);
+      const ball=new THREE.Mesh(new THREE.SphereGeometry(0.048,10,8),eyeWhite);eyeGroup.add(ball);
+      const iris=new THREE.Mesh(new THREE.SphereGeometry(0.028,8,8),irisM);iris.position.z=0.028;eyeGroup.add(iris);
+      const pupil=new THREE.Mesh(new THREE.SphereGeometry(0.014,6,6),pupilM);pupil.position.z=0.042;eyeGroup.add(pupil);
+      // Pálpebra superior sutil
+      const lid=new THREE.Mesh(new THREE.SphereGeometry(0.05,8,4,0,Math.PI*2,0,Math.PI*0.45),skinDark);
+      lid.position.set(0,0.02,0);lid.rotation.x=-0.15;eyeGroup.add(lid);
+      this.head.add(eyeGroup);
+    });
+    // Sobrancelhas
+    [-0.1,0.1].forEach(ex=>{
+      const brow=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.025,0.03),hairM);
+      brow.position.set(ex,0.13,0.22);brow.rotation.z=ex>0?-0.15:0.15;this.head.add(brow);
+    });
+    // Boca
+    const mouth=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.025,0.03),lipM);mouth.position.set(0,-0.1,0.23);this.head.add(mouth);
+    // Cabelo volumoso em camadas
+    const hairBase=new THREE.Mesh(new THREE.SphereGeometry(0.29,14,10,0,Math.PI*2,0,Math.PI*0.55),hairM);
+    hairBase.position.y=0.08;hairBase.scale.set(1.02,1.0,0.98);hairBase.castShadow=true;this.head.add(hairBase);
+    // Topo elemental (mantém identidade do personagem)
+    this.topMesh=new THREE.Mesh(new THREE.ConeGeometry(0.16,0.28,8),accent);this.topMesh.position.y=0.38;this.head.add(this.topMesh);
+    // Mechas laterais de cabelo
+    [-1,1].forEach(side=>{
+      const lock=new THREE.Mesh(new THREE.SphereGeometry(0.1,8,6),hairM);
+      lock.scale.set(0.6,1.4,0.7);lock.position.set(side*0.22,-0.02,0.05);this.head.add(lock);
+    });
+
+    // ═══ QUADRIL / CINTO ═══
+    const belt=new THREE.Mesh(new THREE.BoxGeometry(0.86,0.14,0.46),dark);belt.position.y=-0.52;belt.castShadow=true;this.root.add(belt);
+    const beltBuckle=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.12,0.08),accent);beltBuckle.position.set(0,-0.52,0.22);this.root.add(beltBuckle);
+    const hip=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.28,0.42),dark);hip.position.y=-0.7;hip.castShadow=true;this.root.add(hip);
+
+    // ═══ BRAÇOS DETALHADOS ═══
+    this.armPivotL=new THREE.Group();this.armPivotL.position.set(0.62,0.52,0);
+    this.armPivotR=new THREE.Group();this.armPivotR.position.set(-0.62,0.52,0);
+    function buildArm(pivot){
+      // Bíceps / braço superior
+      const upper=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.105,0.48,10),mat);
+      upper.position.y=-0.26;upper.castShadow=true;pivot.add(upper);
+      // Volume do bíceps
+      const bicep=new THREE.Mesh(new THREE.SphereGeometry(0.1,10,8),mat);
+      bicep.scale.set(1.1,0.9,1.0);bicep.position.set(0,-0.2,0.06);pivot.add(bicep);
+      // Cotovelo
+      const elbow=new THREE.Mesh(new THREE.SphereGeometry(0.08,8,8),skin);elbow.position.y=-0.52;pivot.add(elbow);
+      // Antebraço
+      const lower=new THREE.Mesh(new THREE.CylinderGeometry(0.095,0.08,0.44,10),skin);
+      lower.position.y=-0.74;lower.castShadow=true;pivot.add(lower);
+      // Pulso
+      const wrist=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.075,0.08,8),skin);wrist.position.y=-0.98;pivot.add(wrist);
+      // Mão
+      const palm=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.14,0.07),skin);palm.position.y=-1.1;palm.castShadow=true;pivot.add(palm);
+      // Dedos
+      for(let f=0;f<4;f++){
+        const finger=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.015,0.1,5),skin);
+        finger.position.set(-0.04+f*0.028,-1.2,0.02);finger.castShadow=true;pivot.add(finger);
+      }
+      // Polegar
+      const thumb=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.016,0.08,5),skin);
+      thumb.rotation.z=0.6;thumb.position.set(0.07,-1.08,0.03);pivot.add(thumb);
+      // Bracelete / detalhe elemental no pulso
+      const band=new THREE.Mesh(new THREE.TorusGeometry(0.085,0.018,6,12),accent);band.rotation.x=Math.PI/2;band.position.y=-0.96;pivot.add(band);
+    }
+    buildArm(this.armPivotL);buildArm(this.armPivotR);
     this.root.add(this.armPivotL,this.armPivotR);
-    // Pernas mais longas e humanas
-    this.legPivotL=new THREE.Group();this.legPivotL.position.set(0.22,-0.78,0);
-    this.legPivotR=new THREE.Group();this.legPivotR.position.set(-0.22,-0.78,0);
-    const th=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.13,0.72,6),dark);th.position.y=-0.36;
-    const sh=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.1,0.62,6),dark);sh.position.y=-0.95;
-    const ft=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.12,0.36),shoe);ft.position.set(0,-1.3,0.08);
-    [this.legPivotL,this.legPivotR].forEach(l=>{l.add(th.clone(),sh.clone(),ft.clone());l.children.forEach(c=>c.castShadow=true);});
+
+    // ═══ PERNAS DETALHADAS ═══
+    this.legPivotL=new THREE.Group();this.legPivotL.position.set(0.2,-0.78,0);
+    this.legPivotR=new THREE.Group();this.legPivotR.position.set(-0.2,-0.78,0);
+    function buildLeg(pivot){
+      // Coxa
+      const thigh=new THREE.Mesh(new THREE.CylinderGeometry(0.155,0.13,0.68,10),dark);
+      thigh.position.y=-0.34;thigh.castShadow=true;pivot.add(thigh);
+      // Volume da coxa
+      const thighVol=new THREE.Mesh(new THREE.SphereGeometry(0.13,10,8),dark);
+      thighVol.scale.set(1.05,0.85,1.0);thighVol.position.set(0,-0.25,0.04);pivot.add(thighVol);
+      // Joelho
+      const knee=new THREE.Mesh(new THREE.SphereGeometry(0.095,10,8),dark);knee.position.y=-0.7;pivot.add(knee);
+      // Canela
+      const shin=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.09,0.58,10),dark);
+      shin.position.y=-1.0;shin.castShadow=true;pivot.add(shin);
+      // Tornozelo
+      const ankle=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.085,0.08,8),dark);ankle.position.y=-1.3;pivot.add(ankle);
+      // Pé
+      const foot=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.1,0.32),shoe);
+      foot.position.set(0,-1.38,0.08);foot.castShadow=true;pivot.add(foot);
+      // Bico do pé
+      const toe=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.06,0.1),shoe);toe.position.set(0,-1.36,0.26);pivot.add(toe);
+      // Sola
+      const sole=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.03,0.3),new THREE.MeshStandardMaterial({color:0x111111,roughness:0.9}));
+      sole.position.set(0,-1.44,0.08);pivot.add(sole);
+    }
+    buildLeg(this.legPivotL);buildLeg(this.legPivotR);
     this.root.add(this.legPivotL,this.legPivotR);
-    // Aura
-    this.auraRing=new THREE.Mesh(new THREE.TorusGeometry(0.78,0.035,8,32),new THREE.MeshBasicMaterial({color:pal.ringColor||ch.ringColor,transparent:true,opacity:0.55,blending:THREE.AdditiveBlending}));
-    this.auraRing2=new THREE.Mesh(new THREE.TorusGeometry(0.62,0.028,8,32),new THREE.MeshBasicMaterial({color:pal.ringColor2||ch.ringColor2,transparent:true,opacity:0.4,blending:THREE.AdditiveBlending}));
+
+    // ═══ AURA ELEMENTAL ═══
+    this.auraRing=new THREE.Mesh(new THREE.TorusGeometry(0.82,0.03,10,40),new THREE.MeshBasicMaterial({color:pal.ringColor||ch.ringColor,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending}));
+    this.auraRing2=new THREE.Mesh(new THREE.TorusGeometry(0.65,0.025,10,40),new THREE.MeshBasicMaterial({color:pal.ringColor2||ch.ringColor2,transparent:true,opacity:0.35,blending:THREE.AdditiveBlending}));
     this.auraRing.rotation.x=Math.PI/2;this.auraRing2.rotation.z=Math.PI/4;
-    this.auraRing.position.y=0.15;this.auraRing2.position.y=0.45;
+    this.auraRing.position.y=0.12;this.auraRing2.position.y=0.42;
     this.root.add(this.auraRing,this.auraRing2);
-    this.superRing=new THREE.Mesh(new THREE.TorusGeometry(1.15,0.055,8,48),new THREE.MeshBasicMaterial({color:0xffd600,transparent:true,opacity:0,blending:THREE.AdditiveBlending}));
-    this.superRing.position.y=0.35;this.root.add(this.superRing);
-    const shadowGeo=new THREE.CircleGeometry(0.5,16);shadowGeo.rotateX(-Math.PI/2);
-    this.blobShadow=new THREE.Mesh(shadowGeo,new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.42,depthWrite:false}));
+    this.superRing=new THREE.Mesh(new THREE.TorusGeometry(1.2,0.05,10,48),new THREE.MeshBasicMaterial({color:0xffd600,transparent:true,opacity:0,blending:THREE.AdditiveBlending}));
+    this.superRing.position.y=0.32;this.root.add(this.superRing);
+
+    // Sombra e brilho no chão
+    const shadowGeo=new THREE.CircleGeometry(0.48,20);shadowGeo.rotateX(-Math.PI/2);
+    this.blobShadow=new THREE.Mesh(shadowGeo,new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.4,depthWrite:false}));
     this.blobShadow.position.y=FLOOR_Y+0.005;scene.add(this.blobShadow);
-    const gg=new THREE.CircleGeometry(0.65,24);gg.rotateX(-Math.PI/2);
-    this.groundGlow=new THREE.Mesh(gg,new THREE.MeshBasicMaterial({color:pal.glowColor||ch.glowColor,transparent:true,opacity:0.38,depthWrite:false,blending:THREE.AdditiveBlending}));
+    const gg=new THREE.CircleGeometry(0.62,24);gg.rotateX(-Math.PI/2);
+    this.groundGlow=new THREE.Mesh(gg,new THREE.MeshBasicMaterial({color:pal.glowColor||ch.glowColor,transparent:true,opacity:0.35,depthWrite:false,blending:THREE.AdditiveBlending}));
     this.groundGlow.position.y=FLOOR_Y+0.01;scene.add(this.groundGlow);
     scene.add(this.group);
   }
