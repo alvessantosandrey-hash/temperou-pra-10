@@ -1961,43 +1961,106 @@ function executeFatality() {
       }, 400);
     },
     phoenix_ashes(){
-      // Fênix: queima, explode em cinzas, "renasce" e golpe final
-      winF.setState(STATES.SUPER, true); winF.stateTime = 0;
+      // FÊNIX: voa ao céu, agarra o inimigo no ar e o queima até virar cinzas
+      winF.setState(STATES.JUMP, true); winF.stateTime = 0;
       playHit('whoosh');
-      let burns = 0;
-      const burnIv = setInterval(()=>{
-        burns++;
-        spawnP(sys, loseF.pos.x+(Math.random()-0.5), loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*1.5, 0, 18, 'super');
-        spawnP(sys, winF.pos.x, winF.pos.y+FIGHTER_GROUND_Y+0.8, 0, 10, 'aura');
-        flash(fColor, 0.3+burns*0.05, 0.15);
-        shakeCamera = 0.8 + burns*0.15;
-        const [sx,sy]=screenXY(loseF, Math.random());
-        bloodBurst(sx, sy, 10, [pColor, fColor, '#ffaa00', '#ffd600']);
-        if(burns%2===0) playHit('special');
-        if(burns >= 10){
-          clearInterval(burnIv);
-          // Explosão de cinzas
-          flash('#ffd600', 1, 0.6); shakeCamera = 4; playHit('super');
-          for(let i=0;i<12;i++){
-            setTimeout(()=>{
-              const [a,b]=screenXY(loseF, Math.random()*1.5);
-              bloodBurst(a, b, 12, [pColor, fColor, '#ffd600', '#ffffff']);
-              spawnP(sys, loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2, 0, 15, 'super');
-            }, i*50);
-          }
-          // Fênix "renasce" com uppercut
-          setTimeout(()=>{
-            winF.setState(STATES.UPPERCUT, true); winF.stateTime = 0;
-            setTimeout(()=>{
-              liftLoser(16, 20);
-              flash('#ff3d00', 0.9, 0.5); shakeCamera = 3.5; playHit('super');
-              bloodBurst(...screenXY(loseF), 45, [pColor, fColor, '#ffd600']);
-            }, 280);
-          }, 700);
-          setTimeout(showFatalityText, 1600);
-          endFatality(5200);
+      const startY = winF.pos.y;
+      let flyT = 0;
+      const flyIv = setInterval(()=>{
+        flyT++;
+        winF.pos.y = startY + Math.min(7.5, flyT * 0.5);
+        winF.isGrounded = false;
+        winF.vel.y = 0;
+        winF.auraRing.scale.setScalar(1.4 + flyT * 0.1);
+        winF.auraRing2.scale.setScalar(1.2 + flyT * 0.08);
+        winF.auraRing.material.opacity = 1;
+        spawnP(sys, winF.pos.x+(Math.random()-0.5)*0.6, winF.pos.y+FIGHTER_GROUND_Y*0.4, 0, 12, 'super');
+        spawnP(sys, winF.pos.x, winF.pos.y+FIGHTER_GROUND_Y, 0, 6, 'aura');
+        flash(fColor, 0.12+flyT*0.025, 0.08);
+        shakeCamera = 0.35 + flyT*0.06;
+        if(flyT >= 16){
+          clearInterval(flyIv);
+          // Mergulha e pega o inimigo
+          winF.setState(STATES.UPPERCUT, true); winF.stateTime = 0;
+          playHit('whoosh');
+          const diveY = winF.pos.y;
+          let diveT = 0;
+          const diveIv = setInterval(()=>{
+            diveT++;
+            const p = Math.min(1, diveT/10);
+            winF.pos.y = diveY + (loseF.pos.y + 1.2 - diveY) * p;
+            winF.pos.x += (loseF.pos.x - winF.pos.x) * 0.2;
+            spawnP(sys, winF.pos.x, winF.pos.y+FIGHTER_GROUND_Y, 0, 8, 'trail');
+            if(diveT >= 10){
+              clearInterval(diveIv);
+              flash('#ffd600', 0.75, 0.2); shakeCamera = 2.2; playHit('heavy');
+              // Sobe com o inimigo preso
+              let liftT = 0;
+              const liftIv = setInterval(()=>{
+                liftT++;
+                winF.pos.y += 0.42;
+                loseF.pos.y = winF.pos.y - 0.35;
+                loseF.pos.x = winF.pos.x + winF.facing * 0.45;
+                loseF.isGrounded = false;
+                loseF.vel.set(0,0,0);
+                loseF.root.rotation.z = 0.35 + liftT * 0.07;
+                spawnP(sys, loseF.pos.x+(Math.random()-0.5), loseF.pos.y+FIGHTER_GROUND_Y, 0, 12, 'super');
+                spawnP(sys, winF.pos.x, winF.pos.y+FIGHTER_GROUND_Y, 0, 6, 'aura');
+                const [sx,sy]=screenXY(loseF, Math.random());
+                bloodBurst(sx, sy, 7, [pColor, fColor, '#ffaa00']);
+                if(liftT%3===0) playHit('special');
+                flash(fColor, 0.2, 0.08);
+                shakeCamera = 0.7 + liftT*0.08;
+                if(liftT >= 14){
+                  clearInterval(liftIv);
+                  // Queima no ar até virar cinzas
+                  winF.setState(STATES.SUPER, true); winF.stateTime = 0.15;
+                  flash('#ff3d00', 1, 0.45); shakeCamera = 4; playHit('super');
+                  let burns = 0;
+                  const burnIv = setInterval(()=>{
+                    burns++;
+                    spawnP(sys, loseF.pos.x+(Math.random()-0.5)*1.4, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*1.2, 0, 20, 'super');
+                    const [a,b]=screenXY(loseF, Math.random()*1.1);
+                    bloodBurst(a, b, 12, [pColor, fColor, '#ffd600', '#ffaa00', '#ffffff']);
+                    loseF.root.scale.setScalar(Math.max(0.18, 1 - burns*0.08));
+                    loseF.root.rotation.z += 0.12;
+                    flash(burns%2 ? '#ffd600' : '#ff3d00', 0.35+burns*0.05, 0.1);
+                    shakeCamera = 1.3 + burns*0.18;
+                    if(burns%2===0) playHit('special');
+                    if(burns >= 11){
+                      clearInterval(burnIv);
+                      flash('#ffd600', 1, 0.65); shakeCamera = 5; playHit('super');
+                      loseF.root.visible = false;
+                      for(let i=0;i<14;i++){
+                        setTimeout(()=>{
+                          const [x,y]=screenXY(loseF, Math.random()*2);
+                          bloodBurst(x, y, 14, [pColor, fColor, '#ffd600', '#ffffff', '#ff6600']);
+                          spawnP(sys, loseF.pos.x+(Math.random()-0.5)*2.5, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2.5, 0, 16, 'super');
+                        }, i*40);
+                      }
+                      setTimeout(()=>{
+                        winF.pos.y = FLOOR_Y;
+                        winF.isGrounded = true;
+                        winF.root.position.y = FIGHTER_GROUND_Y;
+                        winF.auraRing.scale.setScalar(1);
+                        winF.auraRing2.scale.setScalar(1);
+                        loseF.root.visible = true;
+                        loseF.root.scale.set(1,1,1);
+                        loseF.root.rotation.set(0,0,1.5);
+                        loseF.pos.y = FLOOR_Y;
+                        loseF.root.position.y = 0.25;
+                        slamLoser();
+                      }, 850);
+                      setTimeout(showFatalityText, 450);
+                      endFatality(5600);
+                    }
+                  }, 85);
+                }
+              }, 48);
+            }
+          }, 38);
         }
-      }, 100);
+      }, 48);
     },
     abyss_vortex(){
       // Leviatã: tentáculos puxam, depois voragem engole
