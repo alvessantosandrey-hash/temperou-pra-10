@@ -1084,35 +1084,108 @@ function resizeBloodCanvas(){
 }
 resizeBloodCanvas();
 window.addEventListener('resize', resizeBloodCanvas);
-function spawnBloodParticles(x, y, count, color='#cc0000'){
+function spawnBloodParticles(x, y, count, color='#cc0000', style='spray'){
   for(let i=0;i<count;i++){
     const angle = Math.random()*Math.PI*2;
-    const speed = 3 + Math.random()*12;
+    let speed, r, decay, gravity, vy0, type = style;
+    if(style==='spray' || style==='default'){
+      speed = 4 + Math.random()*16;
+      r = 2 + Math.random()*7;
+      decay = 0.01 + Math.random()*0.02;
+      gravity = 0.45 + Math.random()*0.35;
+      vy0 = Math.sin(angle)*speed - 8 - Math.random()*10;
+    } else if(style==='mist'){
+      speed = 1 + Math.random()*4;
+      r = 8 + Math.random()*18;
+      decay = 0.008 + Math.random()*0.012;
+      gravity = 0.05 + Math.random()*0.08;
+      vy0 = Math.sin(angle)*speed - 1;
+      type = 'mist';
+    } else if(style==='chunk'){
+      speed = 5 + Math.random()*14;
+      r = 6 + Math.random()*12;
+      decay = 0.006 + Math.random()*0.01;
+      gravity = 0.55 + Math.random()*0.3;
+      vy0 = Math.sin(angle)*speed - 10 - Math.random()*8;
+      type = 'chunk';
+    } else if(style==='arterial'){
+      speed = 10 + Math.random()*18;
+      r = 2 + Math.random()*5;
+      decay = 0.014 + Math.random()*0.02;
+      gravity = 0.35 + Math.random()*0.25;
+      const dir = (Math.random()>0.5?1:-1);
+      vy0 = -12 - Math.random()*10;
+      bloodParticles.push({
+        x, y,
+        vx: dir * (8 + Math.random()*14),
+        vy: vy0,
+        r, life: 1, decay, color, gravity,
+        type: 'arterial', trail: true
+      });
+      continue;
+    } else if(style==='pool'){
+      speed = 0.5 + Math.random()*2;
+      r = 10 + Math.random()*22;
+      decay = 0.003 + Math.random()*0.005;
+      gravity = 0.02;
+      vy0 = 1 + Math.random()*2;
+      type = 'pool';
+    } else {
+      speed = 4 + Math.random()*12;
+      r = 3 + Math.random()*6;
+      decay = 0.012 + Math.random()*0.018;
+      gravity = 0.4 + Math.random()*0.3;
+      vy0 = Math.sin(angle)*speed - 6 - Math.random()*8;
+    }
     bloodParticles.push({
       x, y,
       vx: Math.cos(angle)*speed,
-      vy: Math.sin(angle)*speed - 6 - Math.random()*8,
-      r: 3 + Math.random()*6,
-      life: 1,
-      decay: 0.012 + Math.random()*0.018,
-      color,
-      gravity: 0.4 + Math.random()*0.3,
+      vy: vy0,
+      r, life: 1, decay, color, gravity, type
     });
   }
 }
 function spawnBloodDrip(x, y, color='#aa0000'){
-  for(let i=0;i<8;i++){
+  for(let i=0;i<14;i++){
     bloodParticles.push({
-      x: x + (Math.random()-0.5)*200,
-      y: y + Math.random()*50,
-      vx: (Math.random()-0.5)*1,
-      vy: 4 + Math.random()*6,
-      r: 4 + Math.random()*8,
+      x: x + (Math.random()-0.5)*280,
+      y: y + Math.random()*60,
+      vx: (Math.random()-0.5)*1.5,
+      vy: 5 + Math.random()*8,
+      r: 5 + Math.random()*12,
       life: 1,
-      decay: 0.004 + Math.random()*0.006,
+      decay: 0.003 + Math.random()*0.005,
       color,
-      gravity: 0.1,
+      gravity: 0.12,
+      type: 'drip',
       drip: true,
+    });
+  }
+}
+function spawnGoreExplosion(x, y, intensity=1){
+  const n = Math.floor(28 * intensity);
+  const colors = ['#8b0000','#cc0000','#aa0000','#660000','#ff2222','#4a0000','#990000'];
+  spawnBloodParticles(x, y, n, colors[0], 'spray');
+  spawnBloodParticles(x, y, Math.floor(n*0.5), colors[1], 'chunk');
+  spawnBloodParticles(x, y, Math.floor(n*0.35), colors[2], 'mist');
+  spawnBloodParticles(x, y, Math.floor(n*0.25), colors[4], 'arterial');
+  for(let i=0;i<6;i++){
+    spawnBloodParticles(x+(Math.random()-0.5)*40, y+(Math.random()-0.5)*30, 8, colors[i%colors.length], 'spray');
+  }
+}
+function spawnArterialSpray(x, y, dir=1, color='#cc0000'){
+  for(let i=0;i<20;i++){
+    bloodParticles.push({
+      x: x + (Math.random()-0.5)*10,
+      y: y + (Math.random()-0.5)*10,
+      vx: dir * (12 + Math.random()*20) + (Math.random()-0.5)*4,
+      vy: -8 - Math.random()*14 + (Math.random()-0.5)*6,
+      r: 2 + Math.random()*5,
+      life: 1,
+      decay: 0.012 + Math.random()*0.018,
+      color,
+      gravity: 0.4 + Math.random()*0.3,
+      type: 'arterial'
     });
   }
 }
@@ -1124,18 +1197,49 @@ function animateBlood(){
     p.x += p.vx;
     p.y += p.vy;
     p.life -= p.decay;
-    if(p.life<=0 || p.y>bloodCanvas.height+50){bloodParticles.splice(i,1);continue;}
+    if(p.type==='arterial'){ p.vx *= 0.98; }
+    if(p.type==='mist'){ p.r *= 1.01; p.vx *= 0.97; }
+    if(p.type==='pool'){ p.r *= 1.008; p.vx *= 0.9; }
+    if(p.life<=0 || p.y>bloodCanvas.height+80 || p.x<-50 || p.x>bloodCanvas.width+50){
+      bloodParticles.splice(i,1); continue;
+    }
     bloodCtx.save();
-    bloodCtx.globalAlpha = p.life;
+    bloodCtx.globalAlpha = Math.max(0, p.life * (p.type==='mist'?0.35:p.type==='pool'?0.5:0.95));
     bloodCtx.fillStyle = p.color;
-    if(p.drip){
+    if(p.drip || p.type==='drip'){
       bloodCtx.beginPath();
-      bloodCtx.ellipse(p.x,p.y,p.r*0.5,p.r*1.4,0,0,Math.PI*2);
+      bloodCtx.ellipse(p.x, p.y, p.r*0.45, p.r*1.6, 0, 0, Math.PI*2);
+      bloodCtx.fill();
+    } else if(p.type==='chunk'){
+      bloodCtx.beginPath();
+      bloodCtx.ellipse(p.x, p.y, p.r*0.8, p.r*0.55, p.vx*0.1, 0, Math.PI*2);
+      bloodCtx.fill();
+      // darker core
+      bloodCtx.globalAlpha *= 0.6;
+      bloodCtx.fillStyle = '#4a0000';
+      bloodCtx.beginPath();
+      bloodCtx.ellipse(p.x, p.y, p.r*0.4, p.r*0.3, 0, 0, Math.PI*2);
+      bloodCtx.fill();
+    } else if(p.type==='mist'){
+      bloodCtx.beginPath();
+      bloodCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      bloodCtx.fill();
+    } else if(p.type==='pool'){
+      bloodCtx.beginPath();
+      bloodCtx.ellipse(p.x, p.y, p.r, p.r*0.35, 0, 0, Math.PI*2);
+      bloodCtx.fill();
     } else {
       bloodCtx.beginPath();
-      bloodCtx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      bloodCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      bloodCtx.fill();
+      // small highlight trail for spray
+      if(p.type==='arterial' || p.type==='spray'){
+        bloodCtx.globalAlpha *= 0.4;
+        bloodCtx.beginPath();
+        bloodCtx.arc(p.x - p.vx*0.3, p.y - p.vy*0.3, p.r*0.5, 0, Math.PI*2);
+        bloodCtx.fill();
+      }
     }
-    bloodCtx.fill();
     bloodCtx.restore();
   }
   if(bloodParticles.length>0 || fatalityState.executed){
@@ -1227,6 +1331,9 @@ function cancelFatality(){
   fatalityState.active = false;
   const ui = document.getElementById('fatality-input-ui');
   ui.classList.remove('visible');
+  const hitFlash = document.getElementById('hit-flash');
+  if(hitFlash){ hitFlash.style.opacity = '0'; hitFlash.style.transition = ''; }
+  document.getElementById('fatality-announce').classList.remove('show');
   showWinnerScreen(fatalityState.winner || 1, 'ko');
 }
 function executeFatality() {
@@ -1273,7 +1380,37 @@ function executeFatality() {
     return [(v.x*0.5+0.5)*innerWidth, (-v.y*0.5+0.5)*innerHeight];
   }
   function bloodBurst(sx, sy, n, cols){
-    cols.forEach(c => spawnBloodParticles(sx+(Math.random()-0.5)*60, sy+(Math.random()-0.5)*40, Math.floor(n/cols.length), c));
+    const list = cols && cols.length ? cols : [pColor, '#cc0000', '#8b0000'];
+    const per = Math.max(3, Math.floor(n / list.length));
+    list.forEach((c,i) => {
+      spawnBloodParticles(sx+(Math.random()-0.5)*80, sy+(Math.random()-0.5)*50, per, c, 'spray');
+      if(n > 15) spawnBloodParticles(sx+(Math.random()-0.5)*40, sy+(Math.random()-0.5)*30, Math.floor(per*0.4), c, 'mist');
+    });
+    if(n >= 20){
+      spawnBloodParticles(sx, sy, Math.floor(n*0.3), '#8b0000', 'chunk');
+      spawnArterialSpray(sx, sy, winF.facing, '#cc0000');
+    }
+    if(n >= 35){
+      spawnGoreExplosion(sx, sy, n/40);
+    }
+  }
+  function goreKill(intensity){
+    const [sx,sy] = screenXY(loseF, 0.4);
+    spawnGoreExplosion(sx, sy, intensity||1.5);
+    spawnArterialSpray(sx, sy, winF.facing, '#aa0000');
+    spawnArterialSpray(sx, sy-20, -winF.facing, '#8b0000');
+    spawnBloodDrip(sx, sy, '#660000');
+    // pool on ground
+    const [gx,gy] = screenXY(loseF, -0.2);
+    spawnBloodParticles(gx, gy+30, 12, '#4a0000', 'pool');
+    fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y*0.5, 0, 25, 'explode');
+    shakeCamera = Math.max(shakeCamera, 3.5);
+  }
+  function goreHit(mult){
+    const m = mult||1;
+    const [sx,sy] = screenXY(loseF, 0.3+Math.random()*0.4);
+    bloodBurst(sx, sy, Math.floor(18*m), [pColor, '#cc0000', '#8b0000', '#ff2222']);
+    if(m >= 1.2) spawnArterialSpray(sx, sy, winF.facing, '#aa0000');
   }
   function flash(col, opacity, dur){
     hitFlash.style.background = col;
@@ -1286,38 +1423,76 @@ function executeFatality() {
     const textWrap = document.getElementById('fatality-text-wrap');
     const winnerNameEl = document.getElementById('fatality-winner-name');
     overlay.classList.add('active');
-    document.getElementById('fatality-word').style.color = '#'+winCh.c1.toString(16).padStart(6,'0');
+    // Clássico MK: FATALITY sempre vermelho sangue
+    document.getElementById('fatality-word').style.color = '#ff0000';
     document.getElementById('fatality-word').textContent = 'FATALITY';
-    winnerNameEl.textContent = winCh.fatalityEmoji + ' ' + winCh.fatalityName + ' ' + winCh.fatalityEmoji;
-    winnerNameEl.style.color = '#'+winCh.c1.toString(16).padStart(6,'0');
+    winnerNameEl.textContent = winCh.fatalityEmoji + '  ' + winCh.fatalityName + '  ' + winCh.fatalityEmoji;
+    winnerNameEl.style.color = '#ffcc00';
+    winnerNameEl.style.letterSpacing = '6px';
+    // Flash branco → vermelho (impacto MK)
+    hitFlash.style.background = '#fff';
+    hitFlash.style.transition = 'opacity 0.08s';
+    hitFlash.style.opacity = '0.85';
+    setTimeout(()=>{
+      hitFlash.style.background = 'rgba(120,0,0,0.5)';
+      hitFlash.style.transition = 'opacity 0.6s';
+      hitFlash.style.opacity = '0.25';
+    }, 100);
     setTimeout(()=>{
       textWrap.classList.add('show');
       playFatalitySFX();
-      for(let i=0;i<8;i++){
+      try{
+        if(window.speechSynthesis){
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance('Fatality!');
+          u.lang = 'en-US'; u.rate = 0.7; u.pitch = 0.35; u.volume = 1;
+          window.speechSynthesis.speak(u);
+        }
+      }catch(e){}
+      for(let i=0;i<14;i++){
         setTimeout(()=>{
-          spawnBloodDrip(Math.random()*innerWidth, 0, pColor);
-          spawnBloodParticles(Math.random()*innerWidth, Math.random()*innerHeight*0.45, 12, pColor);
-        }, i*160);
+          spawnBloodDrip(Math.random()*innerWidth, 0, i%2?'#8b0000':pColor);
+          spawnBloodParticles(Math.random()*innerWidth, Math.random()*innerHeight*0.55, 18, pColor, 'spray');
+          spawnBloodParticles(Math.random()*innerWidth, Math.random()*innerHeight*0.4, 8, '#660000', 'mist');
+          if(i%3===0) spawnBloodParticles(Math.random()*innerWidth, Math.random()*innerHeight*0.3, 6, '#aa0000', 'chunk');
+        }, i*120);
+      }
+      // pools accumulating at bottom
+      for(let i=0;i<6;i++){
+        setTimeout(()=>{
+          spawnBloodParticles(Math.random()*innerWidth, innerHeight-40, 10, '#4a0000', 'pool');
+        }, 400+i*200);
       }
     }, 80);
-    try{
-      if(window.speechSynthesis){
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(winCh.fatalityName + '!');
-        u.lang = 'pt-BR'; u.rate = 0.7; u.pitch = 0.5; u.volume = 1;
-        const voices = window.speechSynthesis.getVoices();
-        const prefer = voices.find(v => /pt-BR|pt_BR|Portuguese/.test(v.lang)) || voices.find(v => /pt/.test(v.lang));
-        if(prefer) u.voice = prefer;
-        window.speechSynthesis.speak(u);
-      }
-    }catch(e){}
+    // Nome da fatality em PT depois do "Fatality!"
+    setTimeout(()=>{
+      try{
+        if(window.speechSynthesis){
+          const u = new SpeechSynthesisUtterance(winCh.fatalityName);
+          u.lang = 'pt-BR'; u.rate = 0.75; u.pitch = 0.45; u.volume = 0.9;
+          const voices = window.speechSynthesis.getVoices();
+          const prefer = voices.find(v => /pt-BR|pt_BR|Portuguese/.test(v.lang)) || voices.find(v => /pt/.test(v.lang));
+          if(prefer) u.voice = prefer;
+          window.speechSynthesis.speak(u);
+        }
+      }catch(e){}
+    }, 900);
   }
   function endFatality(delay){
+    // MK: segura o texto FATALITY na tela por mais tempo
+    const hold = Math.max(delay, 4200);
     setTimeout(()=>{
+      stopFatalityParticleLoop();
       document.getElementById('fatality-overlay').classList.remove('active');
       hitFlash.style.opacity = '0';
+      hitFlash.style.transition = '';
+      // Restaura câmera
+      if(camera){
+        camera.fov = 55;
+        camera.updateProjectionMatrix();
+      }
       showWinnerScreen(winner, 'fatality');
-    }, delay);
+    }, hold);
   }
   function liftLoser(kx, ky){
     loseF.vel.x = winF.facing * kx;
@@ -1325,6 +1500,12 @@ function executeFatality() {
     loseF.isGrounded = false;
     loseF.root.rotation.z = 0;
     loseF.root.position.y = FIGHTER_GROUND_Y;
+    try{
+      const [sx,sy]=screenXY(loseF, 0.5);
+      bloodBurst(sx, sy, 28, [pColor, '#cc0000', '#8b0000', '#ff2222']);
+      spawnArterialSpray(sx, sy, winF.facing, '#aa0000');
+      spawnBloodParticles(sx, sy, 10, '#660000', 'chunk');
+    }catch(e){}
   }
   function slamLoser(){
     loseF.vel.set(0,0,0);
@@ -1332,636 +1513,977 @@ function executeFatality() {
     loseF.pos.y = FLOOR_Y;
     loseF.root.rotation.z = 1.4;
     loseF.root.position.y = 0.3;
+    // gore ao bater no chão
+    try{
+      const [sx,sy]=screenXY(loseF, 0.15);
+      spawnGoreExplosion(sx, sy, 1.8);
+      spawnBloodParticles(sx, sy+40, 16, '#4a0000', 'pool');
+      spawnArterialSpray(sx, sy, winF.facing, '#8b0000');
+      fatBurst(loseF.pos.x, FLOOR_Y+0.3, 0, 30, 'explode');
+      shakeCamera = Math.max(shakeCamera, 4);
+      flash('#660000', 0.45, 0.3);
+    }catch(e){}
+  }
+
+  // ── Particle FX temáticos por fatality ──
+  let _fatFxTick = 0;
+  let _fatFxIv = null;
+  function fatBurst(x, y, z, n, kind){
+    const k = kind || 'super';
+    spawnP(sys, x, y, z, Math.floor(n), k);
+  }
+  function fatBlood(n, cols){
+    const [sx,sy] = screenXY(loseF, Math.random()*0.9);
+    const c = cols || [pColor, '#cc0000', '#8b0000', '#ff2222'];
+    bloodBurst(sx, sy, Math.floor(n*1.6), c);
+    if(n >= 8){
+      spawnBloodParticles(sx+(Math.random()-0.5)*30, sy, Math.floor(n*0.5), '#8b0000', 'chunk');
+    }
+    if(n >= 12){
+      spawnArterialSpray(sx, sy, (Math.random()>0.5?1:-1)*winF.facing, '#aa0000');
+    }
+  }
+  function emitFatalityParticles(effect, intensity){
+    const lx = loseF.pos.x, ly = loseF.pos.y + FIGHTER_GROUND_Y, lz = 0;
+    const wx = winF.pos.x, wy = winF.pos.y + FIGHTER_GROUND_Y;
+    const midX = (lx+wx)/2;
+    const I = intensity || 1;
+    const n = Math.floor(6 * I);
+    switch(effect){
+      case 'tsunami':
+        fatBurst(lx+(Math.random()-0.5)*2, FLOOR_Y+0.2+Math.random()*1.5, 0, n+4, 'super');
+        fatBurst(lx, ly+Math.random(), 0, 4, 'aura');
+        if(_fatFxTick%4===0) fatBlood(6, [pColor, fColor, '#0066aa', '#88ddff']);
+        break;
+      case 'burn':
+      case 'phoenix_ashes':
+      case 'nova':
+        fatBurst(lx+(Math.random()-0.5), ly+Math.random()*1.5, 0, n+6, 'rise');
+        fatBurst(lx, ly, 0, 5, 'spark');
+        fatBurst(wx, wy+0.5, 0, 3, 'aura');
+        if(_fatFxTick%3===0) fatBlood(8, [pColor, fColor, '#ffaa00', '#ff2200']);
+        break;
+      case 'shock':
+      case 'sky_judgment':
+        fatBurst(lx, ly+Math.random()*1.2, 0, n+3, 'spark');
+        fatBurst(midX, ly+1+Math.random(), 0, 4, 'beam');
+        if(_fatFxTick%2===0) fatBurst(lx+(Math.random()-0.5)*1.5, ly+2, 0, 3, 'fall');
+        if(_fatFxTick%3===0) fatBlood(7, [pColor, fColor, '#ffffff', '#ffee00']);
+        break;
+      case 'roots':
+      case 'stake':
+        fatBurst(lx+(Math.random()-0.5)*1.5, FLOOR_Y+0.1, 0, n+4, 'ground');
+        fatBurst(lx, ly*0.5, 0, 4, 'rise');
+        if(_fatFxTick%4===0) fatBlood(5, [pColor, fColor, '#33691e']);
+        break;
+      case 'void':
+      case 'total_null':
+        fatBurst(lx, ly+0.5, 0, n+5, 'orbit');
+        fatBurst(lx, ly, 0, 4, 'spiral');
+        if(_fatFxTick%3===0) fatBlood(6, [pColor, fColor, '#220033', '#cc00ff']);
+        break;
+      case 'crush':
+      case 'titan_judgment':
+      case 'final_fist':
+        fatBurst(lx, ly+0.3, 0, n+5, 'explode');
+        fatBurst(lx, FLOOR_Y+0.15, 0, 5, 'ground');
+        if(_fatFxTick%3===0) fatBlood(10, [pColor, fColor, '#cc0000']);
+        break;
+      case 'singularity':
+        fatBurst(midX, ly+0.8, 0, n+6, 'orbit');
+        fatBurst(lx, ly, 0, 4, 'spiral');
+        fatBurst(midX, ly+1, 0, 3, 'beam');
+        if(_fatFxTick%3===0) fatBlood(6, [pColor, fColor, '#00b0ff', '#440066']);
+        break;
+      case 'laser':
+        fatBurst(wx+winF.facing*1.2, wy+0.5, 0, n+2, 'beam');
+        fatBurst(lx, ly+0.5, 0, n, 'spark');
+        if(_fatFxTick%2===0) fatBurst(lx, ly, 0, 4, 'hit');
+        if(_fatFxTick%4===0) fatBlood(5, [pColor, fColor, '#ffd600']);
+        break;
+      case 'quake':
+        fatBurst(lx+(Math.random()-0.5)*2.5, FLOOR_Y+0.1, 0, n+6, 'ground');
+        fatBurst(lx, ly*0.4, 0, 4, 'explode');
+        if(_fatFxTick%3===0) fatBlood(7, [pColor, fColor, '#8d6e63']);
+        break;
+      case 'tornado':
+        fatBurst(lx, ly+Math.random()*2, 0, n+5, 'spiral');
+        fatBurst(lx+(Math.random()-0.5)*0.5, ly+1, 0, 4, 'orbit');
+        if(_fatFxTick%4===0) fatBlood(5, [pColor, fColor, '#ffffff']);
+        break;
+      case 'suffocate':
+        fatBurst(lx+(Math.random()-0.5)*1.5, ly+Math.random(), 0, n+5, 'aura');
+        fatBurst(lx, ly+0.3, 0, 4, 'fall');
+        if(_fatFxTick%3===0) fatBlood(6, [pColor, fColor, '#ffe082']);
+        break;
+      case 'shatter':
+      case 'freeze':
+        fatBurst(lx, ly+0.5, 0, n+4, 'spark');
+        fatBurst(lx+(Math.random()-0.5), ly+Math.random(), 0, 5, 'explode');
+        if(_fatFxTick%2===0) fatBurst(lx, ly+1.5, 0, 3, 'fall');
+        if(_fatFxTick%3===0) fatBlood(7, [pColor, fColor, '#ffffff', '#80deea']);
+        break;
+      case 'rain':
+        fatBurst(lx+(Math.random()-0.5)*2.5, ly+2.5+Math.random(), 0, n+5, 'fall');
+        fatBurst(lx, ly, 0, 3, 'spark');
+        if(_fatFxTick%3===0) fatBlood(5, [pColor, fColor, '#ffab00']);
+        break;
+      case 'storm':
+        fatBurst(lx, ly+1.5+Math.random(), 0, n+3, 'fall');
+        fatBurst(lx+(Math.random()-0.5), ly+Math.random()*2, 0, 4, 'spark');
+        if(_fatFxTick%2===0) fatBurst(midX, ly+2, 0, 3, 'beam');
+        if(_fatFxTick%4===0) fatBlood(5, [pColor, fColor, '#90a4ae']);
+        break;
+      case 'eclipse':
+        fatBurst(lx, ly+0.5, 0, n+4, 'orbit');
+        fatBurst(lx, ly, 0, 3, 'aura');
+        if(_fatFxTick%3===0) fatBlood(5, [pColor, fColor, '#c5cae9']);
+        break;
+      case 'sonic':
+        fatBurst(lx, ly+0.5, 0, n+5, 'ring');
+        fatBurst(lx+(Math.random()-0.5)*0.3, ly, 0, 4, 'explode');
+        if(_fatFxTick%3===0) fatBlood(6, [pColor, fColor, '#e1bee7']);
+        break;
+      case 'sting':
+        fatBurst(lx, ly+0.4, 0, n+3, 'spark');
+        fatBurst(lx+(Math.random()-0.5), ly+Math.random()*0.8, 0, 4, 'hit');
+        if(_fatFxTick%3===0) fatBlood(8, [pColor, fColor, '#aaff00']);
+        break;
+      case 'abyss_vortex':
+        fatBurst(lx, FLOOR_Y+0.2, 0, n+5, 'spiral');
+        fatBurst(lx+(Math.random()-0.5)*1.5, ly*0.5, 0, 5, 'orbit');
+        fatBurst(lx, ly, 0, 3, 'aura');
+        if(_fatFxTick%3===0) fatBlood(6, [pColor, fColor, '#00897b']);
+        break;
+      default:
+        fatBurst(lx, ly+0.4, 0, n+3, 'super');
+        if(_fatFxTick%4===0) fatBlood(5, [pColor, fColor]);
+    }
+  }
+  function startFatalityParticleLoop(effect){
+    stopFatalityParticleLoop();
+    _fatFxTick = 0;
+    _fatFxIv = setInterval(()=>{
+      _fatFxTick++;
+      const inten = 1.3 + Math.min(2.5, _fatFxTick/15);
+      emitFatalityParticles(effect, inten);
+      // gore constante durante a fatality
+      if(_fatFxTick % 5 === 0){
+        const [sx,sy] = screenXY(loseF, Math.random()*0.7);
+        spawnBloodParticles(sx, sy, 10, '#8b0000', 'spray');
+        if(_fatFxTick % 10 === 0){
+          spawnBloodParticles(sx, sy, 5, '#660000', 'chunk');
+          spawnArterialSpray(sx, sy, winF.facing, '#aa0000');
+        }
+      }
+      if(_fatFxTick % 12 === 0){
+        const [gx,gy] = screenXY(loseF, -0.1);
+        spawnBloodParticles(gx, gy+25, 4, '#4a0000', 'pool');
+      }
+    }, 50);
+  }
+  function stopFatalityParticleLoop(){
+    if(_fatFxIv){ clearInterval(_fatFxIv); _fatFxIv = null; }
+  }
+  // burst inicial intenso ao começar a fatality
+  function fatalityOpenBurst(effect){
+    const lx = loseF.pos.x, ly = loseF.pos.y + FIGHTER_GROUND_Y;
+    for(let i=0;i<4;i++){
+      setTimeout(()=>{
+        emitFatalityParticles(effect, 2.8);
+        fatBurst(lx, ly+0.5, 0, 24, 'explode');
+        fatBurst(lx, ly, 0, 14, 'super');
+        fatBlood(20, [pColor, '#cc0000', '#8b0000', fColor]);
+        const [sx,sy]=screenXY(loseF, 0.4);
+        if(i===0) spawnGoreExplosion(sx, sy, 1.2);
+        if(i===2) spawnArterialSpray(sx, sy, winF.facing, '#aa0000');
+      }, i*70);
+    }
   }
 
   // ── Unique fatality animations by element ──
   const FATALITY_ANIMS = {
-    tsunami(afterApproach){
-      // Waves of water projectiles then drown
+    // ═══ ÁGUA — Dilúvio: ondas, afogamento, corpo arrastado ═══
+    tsunami(){
       winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
       playHit('whoosh');
       let wave = 0;
       const waveIv = setInterval(()=>{
         wave++;
-        createProjectile(winF, wave===3);
-        spawnP(sys, winF.pos.x+winF.facing*1.5, winF.pos.y+FIGHTER_GROUND_Y+0.4, 0, 20, 'super');
-        shakeCamera = 0.6 + wave*0.3;
-        flash(fColor, 0.35, 0.3);
-        playHit(wave===3?'super':'special');
-        const [sx,sy] = screenXY(loseF);
-        bloodBurst(sx, sy, 18, [pColor, fColor, '#0066aa']);
-        if(wave>=3){
+        createProjectile(winF, wave>=3);
+        winF.setState(wave%2?STATES.HEAVY:STATES.SPECIAL, true); winF.stateTime = 0.15;
+        fatBurst(winF.pos.x+winF.facing*1.5, winF.pos.y+FIGHTER_GROUND_Y+0.4, 0, 22, 'super');
+        fatBurst(loseF.pos.x, FLOOR_Y+0.15, 0, 14, 'ground');
+        flash(fColor, 0.3+wave*0.1, 0.2);
+        shakeCamera = 0.7+wave*0.35;
+        playHit(wave>=3?'super':'special');
+        loseF.pos.x += winF.facing * 0.35;
+        loseF.root.rotation.z = 0.4 + wave*0.15;
+        loseF.root.position.y = FIGHTER_GROUND_Y - Math.min(0.25, wave*0.05);
+        fatBlood(10, [pColor, fColor, '#0066aa', '#88ddff']);
+        if(wave >= 4){
           clearInterval(waveIv);
-          liftLoser(8, 12);
+          // Afoga: empurra para baixo e some em bolhas
+          liftLoser(4, 6);
           setTimeout(()=>{
-            loseF.vel.y = -20;
-            loseF.root.rotation.z = 0.5;
-            spawnP(sys, loseF.pos.x, FLOOR_Y+0.2, 0, 50, 'super');
-            for(let i=0;i<10;i++) setTimeout(()=>{ const [a,b]=screenXY(loseF,0.2); bloodBurst(a,b,15,[pColor,'#0099ff','#0044aa']); }, i*80);
-            shakeCamera = 2.5; flash('#00aaff', 0.6, 0.5); playHit('super');
-          }, 400);
-          setTimeout(showFatalityText, 900);
-          endFatality(4200);
+            loseF.vel.y = -14;
+            loseF.root.rotation.z = 1.1;
+            flash('#00aaff', 0.85, 0.5); shakeCamera = 3; playHit('super');
+            for(let i=0;i<14;i++){
+              setTimeout(()=>{
+                fatBurst(loseF.pos.x+(Math.random()-0.5)*2, FLOOR_Y+0.2+Math.random()*1.5, 0, 16, 'super');
+                fatBurst(loseF.pos.x, FLOOR_Y+0.1, 0, 8, 'aura');
+                fatBlood(8, [pColor, '#0099ff', '#0044aa']);
+                loseF.root.scale.setScalar(Math.max(0.25, 1-i*0.06));
+              }, i*70);
+            }
+            setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 1200);
+          }, 350);
+          setTimeout(showFatalityText, 1400);
+          endFatality(5200);
         }
-      }, 280);
+      }, 260);
     },
-    burn(afterApproach){
+
+    // ═══ FOGO — Cremação: golpe, levanta em chamas, explode em cinzas ═══
+    burn(){
       winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
       playHit('whoosh');
       setTimeout(()=>{
-        flash('#ff4400', 0.7, 0.2); shakeCamera = 2.2; playHit('heavy'); playHit('super');
-        liftLoser(6, 10);
-        const [sx,sy] = screenXY(loseF);
-        bloodBurst(sx, sy, 30, [pColor, fColor, '#ffaa00', '#ff0000']);
-        spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 45, 'super');
-        // Burning particles loop
+        flash('#ff4400', 0.75, 0.25); shakeCamera = 2.2; playHit('heavy');
+        liftLoser(5, 12);
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 35, 'rise');
+        fatBlood(18, [pColor, fColor, '#ffaa00', '#ff0000']);
         let burns = 0;
         const burnIv = setInterval(()=>{
           burns++;
-          spawnP(sys, loseF.pos.x+(Math.random()-0.5), loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*1.2, 0, 12, 'super');
-          const [a,b]=screenXY(loseF, Math.random());
-          spawnBloodParticles(a, b, 8, '#ff6600');
-          spawnBloodParticles(a, b-20, 6, '#ffaa00');
+          loseF.vel.y = 1.8;
+          loseF.isGrounded = false;
+          loseF.root.rotation.z = 0.5 + Math.sin(burns*0.6)*0.35;
+          loseF.root.rotation.x = Math.sin(burns*0.4)*0.2;
+          fatBurst(loseF.pos.x+(Math.random()-0.5), loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*1.4, 0, 16, 'rise');
+          fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 8, 'spark');
+          fatBlood(7, ['#ff6600', '#ffaa00', '#ff2200']);
+          flash(burns%2?'#ff4400':'#ffaa00', 0.28, 0.1);
+          shakeCamera = 0.7+burns*0.12;
           if(burns%2===0) playHit('punch');
-          if(burns>=8) clearInterval(burnIv);
-        }, 120);
-        setTimeout(()=>{
-          winF.setState(STATES.SPECIAL, true); winF.stateTime = 0.3;
-          createProjectile(winF, true);
-          flash('#ff2200', 0.8, 0.4); shakeCamera = 3;
-          liftLoser(14, 16);
-          bloodBurst(...screenXY(loseF), 40, [pColor,'#ff0000','#ffaa00']);
-        }, 900);
-        setTimeout(showFatalityText, 1600);
-        endFatality(4800);
-      }, 350);
+          if(burns >= 9){
+            clearInterval(burnIv);
+            winF.setState(STATES.SPECIAL, true); winF.stateTime = 0.2;
+            createProjectile(winF, true);
+            flash('#ff2200', 1, 0.55); shakeCamera = 4; playHit('super');
+            liftLoser(11, 16);
+            loseF.root.scale.setScalar(0.35);
+            for(let i=0;i<12;i++){
+              setTimeout(()=>{
+                fatBurst(loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2, 0, 18, 'explode');
+                fatBlood(10, [pColor, '#ff0000', '#ffaa00', '#ffd600']);
+              }, i*55);
+            }
+            setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 1000);
+          }
+        }, 100);
+        setTimeout(showFatalityText, 1700);
+        endFatality(5200);
+      }, 320);
     },
-    shock(afterApproach){
+
+    // ═══ RAIO — Descarga: choques rápidos, corpo convulsionando, raio final ═══
+    shock(){
       winF.setState(STATES.PUNCH, true); winF.stateTime = 0;
       playHit('whoosh');
       setTimeout(()=>{
-        // Rapid electric punches
         let hits = 0;
         const hitIv = setInterval(()=>{
           hits++;
-          winF.setState(hits%2?STATES.ELBOW:STATES.PUNCH, true); winF.stateTime = 0.15;
-          flash(fColor, 0.4+hits*0.05, 0.15);
-          shakeCamera = 0.8 + hits*0.25;
+          winF.setState(hits%2?STATES.ELBOW:STATES.PUNCH, true); winF.stateTime = 0.12;
+          flash(hits%2?'#ffffff':fColor, 0.45+hits*0.06, 0.12);
+          shakeCamera = 0.9+hits*0.22;
           playHit(hits%2?'elbow':'punch');
-          const [sx,sy] = screenXY(loseF);
-          bloodBurst(sx, sy, 12, [pColor, fColor, '#ffffff']);
-          spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 15, 'hit');
-          loseF.root.rotation.z = 0.8 + Math.sin(hits)*0.4;
-          loseF.pos.x += winF.facing * 0.15;
-          if(hits>=6){
+          loseF.root.rotation.z = 0.7 + Math.sin(hits*1.8)*0.5;
+          loseF.root.rotation.x = Math.sin(hits)*0.25;
+          loseF.pos.x += winF.facing * 0.12;
+          fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 14, 'spark');
+          fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+1.2, 0, 6, 'beam');
+          fatBlood(8, [pColor, fColor, '#ffffff', '#ffee00']);
+          if(hits >= 7){
             clearInterval(hitIv);
             winF.setState(STATES.UPPERCUT, true); winF.stateTime = 0;
             setTimeout(()=>{
-              flash('#ffff00', 0.9, 0.5); shakeCamera = 3.5; playHit('super');
-              liftLoser(16, 18);
-              bloodBurst(...screenXY(loseF), 45, [pColor, fColor, '#ffffff', '#ffee00']);
-              spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.8, 0, 50, 'super');
-            }, 300);
-            setTimeout(showFatalityText, 900);
-            endFatality(4500);
+              createProjectile(winF, true);
+              flash('#ffff00', 1, 0.55); shakeCamera = 4; playHit('super');
+              liftLoser(14, 18);
+              for(let i=0;i<10;i++){
+                setTimeout(()=>{
+                  fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2, 0, 16, 'spark');
+                  fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+2, 0, 8, 'beam');
+                  fatBlood(9, [pColor, fColor, '#ffffff']);
+                }, i*50);
+              }
+            }, 280);
+            setTimeout(showFatalityText, 1100);
+            endFatality(5000);
           }
-        }, 160);
+        }, 140);
       }, 200);
     },
-    roots(afterApproach){
-      winF.setState(STATES.SWEEP, true); winF.stateTime = 0;
-      playHit('whoosh');
-      setTimeout(()=>{
-        flash(fColor, 0.4, 0.3); shakeCamera = 1.2; playHit('sweep');
-        // Roots trap - loser shakes
-        let trap = 0;
-        const trapIv = setInterval(()=>{
-          trap++;
-          loseF.root.rotation.z = 1.0 + Math.sin(trap*2)*0.3;
-          loseF.pos.x += (Math.random()-0.5)*0.1;
-          spawnP(sys, loseF.pos.x+(Math.random()-0.5)*1.5, FLOOR_Y+0.1, 0, 8, 'ground');
-          const [sx,sy]=screenXY(loseF,0.1);
-          spawnBloodParticles(sx, sy+30, 6, pColor);
-          if(trap>=10){
-            clearInterval(trapIv);
-            winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
-            setTimeout(()=>{
-              flash(fColor, 0.7, 0.4); shakeCamera = 2.8; playHit('super'); playHit('heavy');
-              liftLoser(10, 8);
-              bloodBurst(...screenXY(loseF), 35, [pColor, fColor, '#33691e']);
-              spawnP(sys, loseF.pos.x, FLOOR_Y+0.3, 0, 40, 'super');
-            }, 350);
-            setTimeout(showFatalityText, 1000);
-            endFatality(4500);
-          }
-        }, 100);
-      }, 400);
-    },
-    void(afterApproach){
+
+    // ═══ NATUREZA — Raízes: prende no chão, esmaga, espinhos ═══
+    roots(){
       winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
       playHit('whoosh');
-      // Darkness consumes
+      // Raízes sobem do chão
+      let trap = 0;
+      const trapIv = setInterval(()=>{
+        trap++;
+        fatBurst(loseF.pos.x+(Math.random()-0.5)*1.8, FLOOR_Y+0.05, 0, 14, 'ground');
+        fatBurst(loseF.pos.x, FLOOR_Y+0.3+trap*0.08, 0, 6, 'rise');
+        loseF.vel.set(0,0,0);
+        loseF.root.position.y = FIGHTER_GROUND_Y - Math.min(0.4, trap*0.04);
+        loseF.root.rotation.z = 0.2 + trap*0.04;
+        flash(fColor, 0.2, 0.1);
+        shakeCamera = 0.5+trap*0.1;
+        if(trap%3===0) playHit('special');
+        if(trap >= 10){
+          clearInterval(trapIv);
+          winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
+          setTimeout(()=>{
+            flash(fColor, 0.85, 0.4); shakeCamera = 3.2; playHit('super'); playHit('heavy');
+            liftLoser(6, 4);
+            loseF.root.scale.y = 0.45;
+            loseF.root.position.y = 0.15;
+            for(let i=0;i<10;i++){
+              setTimeout(()=>{
+                fatBurst(loseF.pos.x+(Math.random()-0.5)*1.5, FLOOR_Y+0.2, 0, 14, 'ground');
+                fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y*0.4, 0, 10, 'rise');
+                fatBlood(8, [pColor, fColor, '#33691e', '#1b5e20']);
+              }, i*60);
+            }
+            setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 900);
+          }, 320);
+          setTimeout(showFatalityText, 1300);
+          endFatality(5000);
+        }
+      }, 95);
+    },
+
+    // ═══ ESCURIDÃO — Vazio: consome, encolhe, apaga ═══
+    void(){
+      winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
+      playHit('whoosh');
       let voidT = 0;
       const voidIv = setInterval(()=>{
         voidT++;
-        spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 20, 'super');
-        spawnP(sys, loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y+Math.random(), 0, 10, 'aura');
-        flash('#220033', 0.3+voidT*0.05, 0.2);
-        shakeCamera = 0.5 + voidT*0.2;
-        loseF.root.scale.setScalar(Math.max(0.15, 1 - voidT*0.08));
-        const [sx,sy]=screenXY(loseF);
-        bloodBurst(sx, sy, 10, [pColor, fColor, '#440066']);
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 18, 'orbit');
+        fatBurst(loseF.pos.x+(Math.random()-0.5)*1.5, loseF.pos.y+FIGHTER_GROUND_Y, 0, 8, 'spiral');
+        flash('#220033', 0.25+voidT*0.05, 0.15);
+        shakeCamera = 0.6+voidT*0.18;
+        loseF.root.scale.setScalar(Math.max(0.12, 1-voidT*0.08));
+        loseF.root.rotation.y += 0.35;
+        fatBlood(7, [pColor, fColor, '#440066']);
         if(voidT%3===0) playHit('special');
-        if(voidT>=10){
+        if(voidT >= 11){
           clearInterval(voidIv);
-          loseF.root.scale.set(1,1,1);
           loseF.root.visible = false;
-          flash('#9900ff', 0.9, 0.6); shakeCamera = 3; playHit('super');
-          bloodBurst(...screenXY(loseF), 50, [pColor, fColor, '#cc00ff', '#220033']);
-          setTimeout(()=>{ loseF.root.visible = true; loseF.root.rotation.z = 1.5; }, 600);
-          setTimeout(showFatalityText, 800);
-          endFatality(4200);
-        }
-      }, 120);
-    },
-    crush(afterApproach){
-      winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
-      playHit('whoosh');
-      setTimeout(()=>{
-        flash(fColor, 0.5, 0.2); shakeCamera = 1.5; playHit('heavy');
-        loseF.root.scale.y = 0.7; loseF.root.position.y = 0.2;
-        const [sx,sy]=screenXY(loseF,0.2);
-        bloodBurst(sx, sy, 20, [pColor, fColor]);
-        setTimeout(()=>{
-          winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
-          setTimeout(()=>{
-            flash(fColor, 0.7, 0.25); shakeCamera = 2.5; playHit('super');
-            loseF.root.scale.y = 0.35; loseF.root.position.y = 0.1;
-            bloodBurst(...screenXY(loseF,0.1), 30, [pColor, fColor, '#cc0000']);
-            spawnP(sys, loseF.pos.x, FLOOR_Y+0.2, 0, 35, 'ground');
+          flash('#9900ff', 1, 0.6); shakeCamera = 3.5; playHit('super');
+          for(let i=0;i<12;i++){
             setTimeout(()=>{
-              winF.setState(STATES.UPPERCUT, true); winF.stateTime = 0;
-              setTimeout(()=>{
-                loseF.root.scale.set(1,1,1);
-                liftLoser(12, 14);
-                flash(fColor, 0.8, 0.4); shakeCamera = 3; playHit('super');
-                bloodBurst(...screenXY(loseF), 40, [pColor, fColor]);
-                spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 40, 'super');
-              }, 280);
-            }, 400);
-            setTimeout(showFatalityText, 1200);
-            endFatality(4600);
-          }, 350);
-        }, 500);
-      }, 350);
-    },
-    singularity(afterApproach){
-      winF.setState(STATES.SUPER, true); winF.stateTime = 0;
-      playHit('whoosh');
-      // Pull toward center then implode
-      const midX = (winF.pos.x + loseF.pos.x)/2;
-      let pull = 0;
-      const pullIv = setInterval(()=>{
-        pull++;
-        loseF.pos.x += (midX - loseF.pos.x) * 0.15;
-        loseF.root.rotation.y += 0.4;
-        loseF.root.scale.setScalar(Math.max(0.2, 1 - pull*0.07));
-        spawnP(sys, midX, FIGHTER_GROUND_Y, 0, 15, 'super');
-        flash(fColor, 0.25, 0.15);
-        shakeCamera = 0.6 + pull*0.15;
-        if(pull%2===0) playHit('special');
-        if(pull>=12){
-          clearInterval(pullIv);
-          flash('#bb00ff', 1, 0.5); shakeCamera = 4; playHit('super');
-          bloodBurst(...screenXY(loseF), 55, [pColor, fColor, '#00b0ff', '#ffffff']);
-          spawnP(sys, midX, FIGHTER_GROUND_Y+0.5, 0, 60, 'super');
-          loseF.root.scale.set(1,1,1);
-          loseF.root.rotation.y = 0;
-          liftLoser(winF.facing>0?-8:8, 20);
-          setTimeout(showFatalityText, 600);
-          endFatality(4200);
+              fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 16, 'orbit');
+              fatBlood(8, [pColor, fColor, '#cc00ff', '#220033']);
+            }, i*45);
+          }
+          setTimeout(()=>{
+            loseF.root.visible = true;
+            loseF.root.scale.set(1,1,1);
+            loseF.root.rotation.set(0,0,1.5);
+            slamLoser();
+          }, 700);
+          setTimeout(showFatalityText, 900);
+          endFatality(4800);
         }
       }, 100);
     },
-    stake(afterApproach){
+
+    // ═══ BORRACHA/METAL — Esmagamento progressivo ═══
+    crush(){
       winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
       playHit('whoosh');
       setTimeout(()=>{
-        // Stake from ground
-        spawnP(sys, loseF.pos.x, FLOOR_Y, 0, 30, 'ground');
-        flash(fColor, 0.5, 0.3); shakeCamera = 2; playHit('heavy');
-        loseF.root.position.y = 0.8;
-        loseF.root.rotation.z = 0.3;
-        const [sx,sy]=screenXY(loseF,0.3);
-        bloodBurst(sx, sy, 25, [pColor, fColor, '#5d4037']);
+        // 1º soco — achata um pouco
+        flash(fColor, 0.55, 0.2); shakeCamera = 1.8; playHit('heavy');
+        loseF.root.scale.y = 0.72; loseF.root.position.y = 0.22;
+        fatBurst(loseF.pos.x, loseF.pos.y+0.3, 0, 18, 'explode');
+        fatBlood(12, [pColor, fColor]);
         setTimeout(()=>{
-          winF.setState(STATES.UPPERCUT, true); winF.stateTime = 0;
+          winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
           setTimeout(()=>{
-            liftLoser(8, 16);
-            flash(fColor, 0.7, 0.4); shakeCamera = 2.8; playHit('super');
-            bloodBurst(...screenXY(loseF), 35, [pColor, fColor]);
-            spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 40, 'super');
-          }, 280);
-        }, 600);
-        setTimeout(showFatalityText, 1400);
-        endFatality(4600);
-      }, 350);
+            flash(fColor, 0.75, 0.25); shakeCamera = 2.6; playHit('super');
+            loseF.root.scale.y = 0.4; loseF.root.position.y = 0.12;
+            fatBurst(loseF.pos.x, FLOOR_Y+0.2, 0, 22, 'ground');
+            fatBlood(16, [pColor, fColor, '#cc0000']);
+            setTimeout(()=>{
+              winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
+              setTimeout(()=>{
+                flash(fColor, 1, 0.5); shakeCamera = 4; playHit('super'); playHit('heavy');
+                loseF.root.scale.set(1.3, 0.15, 1.3);
+                loseF.root.position.y = 0.08;
+                for(let i=0;i<10;i++){
+                  setTimeout(()=>{
+                    fatBurst(loseF.pos.x+(Math.random()-0.5)*2, FLOOR_Y+0.15, 0, 14, 'explode');
+                    fatBlood(10, [pColor, fColor, '#aa0000', '#ffffff']);
+                  }, i*50);
+                }
+                setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 900);
+              }, 300);
+            }, 400);
+          }, 300);
+        }, 450);
+        setTimeout(showFatalityText, 2000);
+        endFatality(5500);
+      }, 280);
     },
-    laser(afterApproach){
-      winF.setState(STATES.SPECIAL, true); winF.stateTime = 0.35;
+
+    // ═══ ESPAÇO — Singularidade: puxa, gira, colapsa ═══
+    singularity(){
+      winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
       playHit('whoosh');
-      setTimeout(()=>{
-        // Precision laser barrage
-        let shots = 0;
-        const laserIv = setInterval(()=>{
-          shots++;
-          createProjectile(winF, shots===4);
-          flash(fColor, 0.4, 0.12);
-          shakeCamera = 0.7 + shots*0.2;
-          playHit(shots===4?'super':'special');
-          const [sx,sy]=screenXY(loseF);
-          bloodBurst(sx, sy, 14, [pColor, fColor, '#ffd600']);
-          spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 12, 'hit');
-          loseF.pos.x += winF.facing * 0.2;
-          loseF.root.rotation.z = 0.9 + shots*0.1;
-          if(shots>=4){
-            clearInterval(laserIv);
-            liftLoser(14, 12);
-            flash('#00e5ff', 0.85, 0.5); shakeCamera = 3; playHit('super');
-            bloodBurst(...screenXY(loseF), 40, [pColor, fColor, '#ffffff']);
-            spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 45, 'super');
-            setTimeout(showFatalityText, 700);
-            endFatality(4300);
+      const blackX = (winF.pos.x + loseF.pos.x) / 2;
+      let pull = 0;
+      const pullIv = setInterval(()=>{
+        pull++;
+        loseF.pos.x += (blackX - loseF.pos.x) * 0.15;
+        loseF.pos.y = FLOOR_Y + Math.sin(pull*0.5)*0.4 + pull*0.1;
+        loseF.isGrounded = false;
+        loseF.root.rotation.z += 0.3;
+        loseF.root.rotation.y += 0.2;
+        loseF.root.scale.setScalar(Math.max(0.15, 1-pull*0.07));
+        fatBurst(blackX, FLOOR_Y+0.8+Math.random(), 0, 14, 'orbit');
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 8, 'spiral');
+        flash('#aa00ff', 0.2+pull*0.04, 0.1);
+        shakeCamera = 0.8+pull*0.15;
+        fatBlood(6, [pColor, fColor, '#00b0ff']);
+        if(pull%3===0) playHit('special');
+        if(pull >= 14){
+          clearInterval(pullIv);
+          flash('#bb00ff', 1, 0.65); shakeCamera = 4.5; playHit('super');
+          loseF.root.visible = false;
+          for(let i=0;i<16;i++){
+            setTimeout(()=>{
+              fatBurst(blackX+(Math.random()-0.5)*2.5, FLOOR_Y+Math.random()*3, 0, 18, 'orbit');
+              fatBlood(8, [pColor, fColor, '#00b0ff', '#ffffff']);
+            }, i*40);
           }
-        }, 220);
-      }, 200);
+          setTimeout(()=>{
+            loseF.root.visible = true;
+            loseF.root.scale.set(1,1,1);
+            loseF.root.rotation.set(0,0,1.5);
+            loseF.pos.y = FLOOR_Y;
+            slamLoser();
+          }, 850);
+          setTimeout(showFatalityText, 600);
+          endFatality(5000);
+        }
+      }, 85);
     },
-    quake(afterApproach){
-      winF.setState(STATES.SWEEP, true); winF.stateTime = 0;
+
+    // ═══ MADEIRA — Estacas do chão ═══
+    stake(){
+      winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
       playHit('whoosh');
-      setTimeout(()=>{
-        // Ground pound sequence
-        let pounds = 0;
-        const poundIv = setInterval(()=>{
-          pounds++;
-          winF.setState(STATES.HEAVY, true); winF.stateTime = 0.2;
-          flash(fColor, 0.4, 0.2);
-          shakeCamera = 1.5 + pounds*0.5;
-          playHit('heavy');
-          spawnP(sys, loseF.pos.x, FLOOR_Y, 0, 25, 'ground');
-          const [sx,sy]=screenXY(loseF,0.1);
-          bloodBurst(sx, sy, 15, [pColor, fColor, '#5d4037']);
-          loseF.root.rotation.z = 1.0 + pounds*0.15;
-          loseF.root.position.y = Math.max(0.15, 0.4 - pounds*0.05);
-          if(pounds>=4){
-            clearInterval(poundIv);
-            flash(fColor, 0.9, 0.5); shakeCamera = 4; playHit('super');
-            liftLoser(6, 20);
-            bloodBurst(...screenXY(loseF), 45, [pColor, fColor]);
-            spawnP(sys, loseF.pos.x, FLOOR_Y, 0, 55, 'super');
-            setTimeout(showFatalityText, 700);
-            endFatality(4300);
-          }
-        }, 280);
-      }, 400);
+      let stakes = 0;
+      const stakeIv = setInterval(()=>{
+        stakes++;
+        fatBurst(loseF.pos.x+(Math.random()-0.5)*1.2, FLOOR_Y+0.05, 0, 12, 'ground');
+        fatBurst(loseF.pos.x, FLOOR_Y+0.4+stakes*0.1, 0, 8, 'rise');
+        loseF.root.rotation.z = 0.3+stakes*0.1;
+        loseF.pos.y = FLOOR_Y + Math.min(0.8, stakes*0.12);
+        loseF.isGrounded = false;
+        flash(fColor, 0.25, 0.1);
+        shakeCamera = 0.7+stakes*0.15;
+        playHit(stakes%2?'special':'punch');
+        fatBlood(7, [pColor, fColor, '#5d4037']);
+        if(stakes >= 8){
+          clearInterval(stakeIv);
+          winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
+          setTimeout(()=>{
+            flash(fColor, 0.9, 0.45); shakeCamera = 3.5; playHit('super');
+            liftLoser(8, 10);
+            for(let i=0;i<10;i++){
+              setTimeout(()=>{
+                fatBurst(loseF.pos.x, FLOOR_Y+0.2+i*0.15, 0, 12, 'rise');
+                fatBlood(8, [pColor, fColor, '#8d6e63']);
+              }, i*55);
+            }
+            setTimeout(()=>slamLoser(), 800);
+          }, 300);
+          setTimeout(showFatalityText, 1200);
+          endFatality(5000);
+        }
+      }, 110);
     },
-    tornado(afterApproach){
-      winF.setState(STATES.KICK, true); winF.stateTime = 0;
+
+    // ═══ TECH — Laser preciso, overload, desintegra ═══
+    laser(){
+      winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
       playHit('whoosh');
-      // Spin the loser
+      let beams = 0;
+      const beamIv = setInterval(()=>{
+        beams++;
+        createProjectile(winF, beams>=3);
+        fatBurst(winF.pos.x+winF.facing*1.5, winF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 10, 'beam');
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 14, 'spark');
+        flash(beams%2?'#00e5ff':'#ffd600', 0.4, 0.12);
+        shakeCamera = 0.8+beams*0.25;
+        playHit(beams>=3?'super':'special');
+        loseF.root.rotation.z = 0.5+beams*0.12;
+        loseF.pos.x += winF.facing*0.2;
+        fatBlood(7, [pColor, fColor, '#ffd600']);
+        if(beams >= 4){
+          clearInterval(beamIv);
+          // Overload final
+          winF.setState(STATES.SUPER, true); winF.stateTime = 0.2;
+          setTimeout(()=>{
+            createProjectile(winF, true);
+            flash('#00e5ff', 1, 0.55); shakeCamera = 4; playHit('super');
+            liftLoser(12, 14);
+            loseF.root.scale.setScalar(0.4);
+            for(let i=0;i<12;i++){
+              setTimeout(()=>{
+                fatBurst(loseF.pos.x+(Math.random()-0.5)*1.5, loseF.pos.y+FIGHTER_GROUND_Y+Math.random(), 0, 14, 'spark');
+                fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 8, 'beam');
+                fatBlood(8, [pColor, fColor, '#ffffff']);
+              }, i*50);
+            }
+            setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 900);
+          }, 350);
+          setTimeout(showFatalityText, 1300);
+          endFatality(5200);
+        }
+      }, 220);
+    },
+
+    // ═══ PEDRA — Terremoto, rachadura, esmaga ═══
+    quake(){
+      winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
+      playHit('whoosh');
+      let quakes = 0;
+      const qIv = setInterval(()=>{
+        quakes++;
+        fatBurst(loseF.pos.x+(Math.random()-0.5)*3, FLOOR_Y+0.05, 0, 16, 'ground');
+        fatBurst(loseF.pos.x, FLOOR_Y+0.2, 0, 10, 'explode');
+        flash(fColor, 0.3, 0.12);
+        shakeCamera = 1.2+quakes*0.3;
+        playHit('heavy');
+        loseF.root.rotation.z = 0.4+Math.sin(quakes)*0.3;
+        loseF.pos.y = FLOOR_Y + (quakes%2)*0.15;
+        fatBlood(6, [pColor, fColor, '#8d6e63']);
+        if(quakes >= 6){
+          clearInterval(qIv);
+          winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
+          setTimeout(()=>{
+            flash(fColor, 1, 0.5); shakeCamera = 4.5; playHit('super');
+            loseF.root.scale.y = 0.25;
+            loseF.root.position.y = 0.1;
+            for(let i=0;i<12;i++){
+              setTimeout(()=>{
+                fatBurst(loseF.pos.x+(Math.random()-0.5)*2.5, FLOOR_Y+0.1, 0, 16, 'ground');
+                fatBlood(9, [pColor, fColor, '#5d4037']);
+              }, i*50);
+            }
+            setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 900);
+          }, 320);
+          setTimeout(showFatalityText, 1200);
+          endFatality(5200);
+        }
+      }, 160);
+    },
+
+    // ═══ VENTO — Tornado: gira, levanta, arrebenta ═══
+    tornado(){
+      winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
+      playHit('whoosh');
       let spin = 0;
-      loseF.root.rotation.z = 0;
-      loseF.root.position.y = FIGHTER_GROUND_Y;
       const spinIv = setInterval(()=>{
         spin++;
-        loseF.root.rotation.y += 0.6;
-        loseF.pos.y = FLOOR_Y + Math.sin(spin*0.4)*1.5 + 0.5;
-        loseF.pos.x += winF.facing * 0.08;
-        spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 10, 'aura');
-        if(spin%3===0){ flash(fColor, 0.3, 0.1); playHit('whoosh'); }
-        shakeCamera = 0.8;
-        if(spin>=20){
+        loseF.root.rotation.y += 0.55;
+        loseF.pos.y = FLOOR_Y + Math.min(3.5, spin*0.22);
+        loseF.isGrounded = false;
+        loseF.pos.x += Math.sin(spin*0.4)*0.15;
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y*0.5, 0, 14, 'spiral');
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 8, 'orbit');
+        flash(fColor, 0.2, 0.1);
+        shakeCamera = 0.7+spin*0.1;
+        if(spin%3===0) playHit('special');
+        fatBlood(5, [pColor, fColor, '#ffffff']);
+        if(spin >= 14){
           clearInterval(spinIv);
-          winF.setState(STATES.UPPERCUT, true); winF.stateTime = 0;
-          setTimeout(()=>{
-            loseF.root.rotation.y = 0;
-            liftLoser(18, 16);
-            flash(fColor, 0.8, 0.4); shakeCamera = 3; playHit('super');
-            bloodBurst(...screenXY(loseF), 40, [pColor, fColor, '#ffffff']);
-            spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 45, 'super');
-          }, 250);
-          setTimeout(showFatalityText, 900);
-          endFatality(4400);
+          flash(fColor, 0.95, 0.5); shakeCamera = 4; playHit('super');
+          liftLoser(16, 6);
+          loseF.root.rotation.z = 1.4;
+          for(let i=0;i<12;i++){
+            setTimeout(()=>{
+              fatBurst(loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y, 0, 14, 'spiral');
+              fatBlood(8, [pColor, fColor, '#b3e5fc']);
+            }, i*45);
+          }
+          setTimeout(()=>slamLoser(), 800);
+          setTimeout(showFatalityText, 1000);
+          endFatality(5000);
         }
-      }, 50);
+      }, 75);
     },
-    suffocate(afterApproach){
+
+    // ═══ AREIA — Sufoca em tempestade de areia ═══
+    suffocate(){
       winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
       playHit('whoosh');
       let sand = 0;
       const sandIv = setInterval(()=>{
         sand++;
-        spawnP(sys, loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y*Math.random(), 0, 15, 'ground');
-        flash(fColor, 0.2+sand*0.04, 0.15);
-        shakeCamera = 0.5 + sand*0.1;
-        loseF.root.scale.y = Math.max(0.3, 1 - sand*0.06);
-        loseF.root.position.y = Math.max(0.15, 0.35 - sand*0.02);
-        const [sx,sy]=screenXY(loseF,0.2);
-        bloodBurst(sx, sy, 8, [pColor, fColor, '#ffe082']);
+        fatBurst(loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*1.5, 0, 16, 'aura');
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+1.5, 0, 8, 'fall');
+        loseF.root.rotation.z = 0.3+Math.sin(sand*0.5)*0.4;
+        loseF.root.scale.setScalar(Math.max(0.5, 1-sand*0.04));
+        flash(fColor, 0.2, 0.1);
+        shakeCamera = 0.6+sand*0.1;
         if(sand%2===0) playHit('special');
-        if(sand>=12){
+        fatBlood(5, [pColor, fColor, '#ffe082']);
+        if(sand >= 12){
           clearInterval(sandIv);
-          loseF.root.scale.set(1,1,1);
-          flash(fColor, 0.8, 0.5); shakeCamera = 2.5; playHit('super');
-          bloodBurst(...screenXY(loseF), 40, [pColor, fColor]);
-          spawnP(sys, loseF.pos.x, FLOOR_Y+0.3, 0, 50, 'super');
-          setTimeout(showFatalityText, 600);
-          endFatality(4200);
+          flash(fColor, 0.9, 0.5); shakeCamera = 3.5; playHit('super');
+          liftLoser(6, 4);
+          loseF.root.scale.setScalar(0.3);
+          for(let i=0;i<10;i++){
+            setTimeout(()=>{
+              fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 16, 'aura');
+              fatBlood(8, [pColor, fColor, '#ffcc02']);
+            }, i*55);
+          }
+          setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 900);
+          setTimeout(showFatalityText, 1100);
+          endFatality(5000);
         }
-      }, 110);
+      }, 90);
     },
-    shatter(afterApproach){
-      winF.setState(STATES.PUNCH, true); winF.stateTime = 0;
-      playHit('whoosh');
-      setTimeout(()=>{
-        // Crystal freeze then shatter
-        flash('#80deea', 0.5, 0.3); playHit('special');
-        loseF.root.rotation.z = 0.2;
-        spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 25, 'hit');
-        setTimeout(()=>{
-          winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
-          setTimeout(()=>{
-            flash(fColor, 0.9, 0.4); shakeCamera = 3.5; playHit('super'); playHit('heavy');
-            // Shatter into particles
-            for(let i=0;i<8;i++){
-              setTimeout(()=>{
-                const [sx,sy]=screenXY(loseF, Math.random());
-                bloodBurst(sx, sy, 12, [pColor, fColor, '#ffffff', '#e0f7fa']);
-                spawnP(sys, loseF.pos.x+(Math.random()-0.5), loseF.pos.y+FIGHTER_GROUND_Y+Math.random(), 0, 15, 'super');
-                shakeCamera = 1.5;
-              }, i*70);
-            }
-            liftLoser(10, 8);
-            loseF.root.scale.set(0.5, 0.5, 0.5);
-            setTimeout(()=> loseF.root.scale.set(1,1,1), 800);
-          }, 350);
-        }, 500);
-        setTimeout(showFatalityText, 1600);
-        endFatality(4800);
-      }, 300);
-    },
-    rain(afterApproach){
+
+    // ═══ DIAMANTE — Congela em cristal e estilhaça ═══
+    shatter(){
       winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
       playHit('whoosh');
-      // Gold coins rain
-      let coins = 0;
-      const coinIv = setInterval(()=>{
-        coins++;
-        spawnP(sys, loseF.pos.x+(Math.random()-0.5)*3, loseF.pos.y+FIGHTER_GROUND_Y+2+Math.random(), 0, 8, 'super');
-        const [sx,sy]=screenXY(loseF, Math.random()*1.5);
-        bloodBurst(sx, sy, 8, [pColor, fColor, '#ffab00']);
-        if(coins%2===0){ flash(fColor, 0.25, 0.1); playHit('punch'); }
-        shakeCamera = 0.6;
-        loseF.root.rotation.z = 0.8 + Math.sin(coins)*0.3;
-        if(coins>=12){
-          clearInterval(coinIv);
-          winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
+      let crystal = 0;
+      const cIv = setInterval(()=>{
+        crystal++;
+        fatBurst(loseF.pos.x+(Math.random()-0.5), loseF.pos.y+FIGHTER_GROUND_Y+Math.random(), 0, 12, 'spark');
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 6, 'aura');
+        loseF.vel.set(0,0,0);
+        loseF.root.rotation.z = crystal*0.03;
+        flash('#80deea', 0.25, 0.1);
+        shakeCamera = 0.5+crystal*0.1;
+        if(crystal%2===0) playHit('special');
+        if(crystal >= 8){
+          clearInterval(cIv);
+          // Cristalizado
+          flash('#e0f7fa', 0.8, 0.35); shakeCamera = 2; playHit('super');
+          loseF.root.scale.set(1.08, 1.08, 1.08);
           setTimeout(()=>{
-            flash(fColor, 0.8, 0.4); shakeCamera = 3; playHit('super');
-            liftLoser(12, 14);
-            bloodBurst(...screenXY(loseF), 40, [pColor, fColor, '#ffffff']);
-            spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 45, 'super');
-          }, 300);
-          setTimeout(showFatalityText, 900);
-          endFatality(4400);
+            winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
+            setTimeout(()=>{
+              flash('#ffffff', 1, 0.5); shakeCamera = 4; playHit('super'); playHit('heavy');
+              loseF.root.scale.set(0.3, 0.5, 0.3);
+              liftLoser(9, 8);
+              for(let i=0;i<14;i++){
+                setTimeout(()=>{
+                  fatBurst(loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y+Math.random(), 0, 14, 'explode');
+                  fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+1, 0, 6, 'spark');
+                  fatBlood(8, [pColor, fColor, '#ffffff', '#e0f7fa']);
+                }, i*50);
+              }
+              setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 950);
+            }, 300);
+          }, 450);
+          setTimeout(showFatalityText, 1500);
+          endFatality(5200);
         }
       }, 100);
     },
-    storm(afterApproach){
+
+    // ═══ OURO — Chuva de moedas esmagadoras ═══
+    rain(){
+      winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
+      playHit('whoosh');
+      let coins = 0;
+      const coinIv = setInterval(()=>{
+        coins++;
+        fatBurst(loseF.pos.x+(Math.random()-0.5)*3, loseF.pos.y+FIGHTER_GROUND_Y+2.5+Math.random(), 0, 12, 'fall');
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 6, 'spark');
+        loseF.root.rotation.z = 0.6+Math.sin(coins)*0.35;
+        if(coins%2===0){ flash(fColor, 0.25, 0.1); playHit('punch'); }
+        shakeCamera = 0.6+coins*0.08;
+        fatBlood(5, [pColor, fColor, '#ffab00']);
+        if(coins >= 12){
+          clearInterval(coinIv);
+          winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
+          setTimeout(()=>{
+            flash(fColor, 0.95, 0.5); shakeCamera = 3.8; playHit('super');
+            liftLoser(10, 12);
+            for(let i=0;i<12;i++){
+              setTimeout(()=>{
+                fatBurst(loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y+2, 0, 12, 'fall');
+                fatBlood(8, [pColor, fColor, '#ffd600', '#ffffff']);
+              }, i*45);
+            }
+            setTimeout(()=>slamLoser(), 800);
+          }, 300);
+          setTimeout(showFatalityText, 1100);
+          endFatality(5000);
+        }
+      }, 95);
+    },
+
+    // ═══ NUVEM — Tempestade: granizo + raios ═══
+    storm(){
       winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
       playHit('whoosh');
       let bolts = 0;
       const boltIv = setInterval(()=>{
         bolts++;
-        createProjectile(winF, bolts===3);
-        flash(bolts%2?'#ffffff':fColor, 0.5, 0.15);
-        shakeCamera = 1 + bolts*0.4;
-        playHit(bolts===3?'super':'special');
-        const [sx,sy]=screenXY(loseF);
-        bloodBurst(sx, sy, 16, [pColor, fColor, '#90a4ae', '#ffffff']);
-        spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+1, 0, 20, 'super');
-        loseF.pos.x += winF.facing * 0.25;
-        if(bolts>=3){
+        fatBurst(loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y+2.5, 0, 10, 'fall');
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+1.5, 0, 10, 'spark');
+        if(bolts%2===0) createProjectile(winF, bolts>=4);
+        flash(bolts%2?'#ffffff':fColor, 0.45, 0.12);
+        shakeCamera = 1+bolts*0.3;
+        playHit(bolts>=4?'super':'special');
+        loseF.root.rotation.z = 0.5+bolts*0.1;
+        fatBlood(7, [pColor, fColor, '#90a4ae', '#ffffff']);
+        if(bolts >= 5){
           clearInterval(boltIv);
-          liftLoser(15, 15);
-          setTimeout(showFatalityText, 700);
-          endFatality(4300);
+          liftLoser(14, 14);
+          for(let i=0;i<10;i++){
+            setTimeout(()=>{
+              fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2, 0, 14, 'spark');
+              fatBlood(8, [pColor, fColor, '#ffffff']);
+            }, i*50);
+          }
+          setTimeout(showFatalityText, 900);
+          endFatality(4800);
         }
-      }, 300);
+      }, 200);
     },
-    nova(afterApproach){
+
+    // ═══ SOL — Nova: carrega e explode ═══
+    nova(){
       winF.setState(STATES.SUPER, true); winF.stateTime = 0;
       playHit('whoosh');
-      // Charge then explode
       let charge = 0;
       const chargeIv = setInterval(()=>{
         charge++;
-        winF.auraRing.scale.setScalar(1 + charge*0.4);
-        winF.auraRing2.scale.setScalar(1 + charge*0.35);
-        spawnP(sys, winF.pos.x, winF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 12, 'aura');
+        winF.auraRing.scale.setScalar(1+charge*0.35);
+        winF.auraRing2.scale.setScalar(1+charge*0.3);
+        fatBurst(winF.pos.x, winF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 14, 'rise');
+        fatBurst(winF.pos.x, winF.pos.y+FIGHTER_GROUND_Y, 0, 8, 'aura');
         flash(fColor, 0.15+charge*0.05, 0.1);
-        shakeCamera = 0.4 + charge*0.15;
-        if(charge>=8){
+        shakeCamera = 0.5+charge*0.15;
+        if(charge >= 9){
           clearInterval(chargeIv);
           winF.auraRing.scale.setScalar(1);
           winF.auraRing2.scale.setScalar(1);
-          flash('#ffab40', 1, 0.6); shakeCamera = 4; playHit('super');
-          liftLoser(16, 18);
-          for(let i=0;i<10;i++){
+          flash('#ffab40', 1, 0.65); shakeCamera = 4.5; playHit('super');
+          liftLoser(15, 17);
+          for(let i=0;i<14;i++){
             setTimeout(()=>{
-              const [sx,sy]=screenXY(loseF, Math.random());
-              bloodBurst(sx, sy, 12, [pColor, fColor, '#ffdd00', '#ffffff']);
-              spawnP(sys, loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2, 0, 15, 'super');
-            }, i*60);
+              fatBurst(loseF.pos.x+(Math.random()-0.5)*2.5, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2, 0, 16, 'explode');
+              fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 10, 'rise');
+              fatBlood(9, [pColor, fColor, '#ffdd00', '#ffffff']);
+            }, i*45);
           }
-          setTimeout(showFatalityText, 800);
-          endFatality(4500);
+          setTimeout(showFatalityText, 1000);
+          endFatality(5200);
         }
-      }, 100);
+      }, 95);
     },
-    eclipse(afterApproach){
+
+    // ═══ LUA — Eclipse: escurece e golpe lunar ═══
+    eclipse(){
       winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
       playHit('whoosh');
-      // Dim the screen then lunar strike
       hitFlash.style.background = '#0a0a20';
-      hitFlash.style.transition = 'opacity 0.8s';
-      hitFlash.style.opacity = '0.6';
+      hitFlash.style.transition = 'opacity 0.7s';
+      hitFlash.style.opacity = '0.55';
       let ecl = 0;
       const eclIv = setInterval(()=>{
         ecl++;
-        spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 10, 'aura');
-        loseF.root.rotation.z = 0.5 + ecl*0.1;
-        if(ecl>=6){
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 12, 'orbit');
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 6, 'aura');
+        loseF.root.rotation.z = 0.4+ecl*0.08;
+        if(ecl >= 7){
           clearInterval(eclIv);
           winF.setState(STATES.UPPERCUT, true); winF.stateTime = 0;
           setTimeout(()=>{
-            flash(fColor, 0.85, 0.5); shakeCamera = 3; playHit('super');
-            liftLoser(12, 16);
-            bloodBurst(...screenXY(loseF), 40, [pColor, fColor, '#c5cae9']);
-            spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 45, 'super');
+            flash(fColor, 0.9, 0.5); shakeCamera = 3.5; playHit('super');
+            liftLoser(12, 15);
+            for(let i=0;i<10;i++){
+              setTimeout(()=>{
+                fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+Math.random(), 0, 12, 'orbit');
+                fatBlood(8, [pColor, fColor, '#c5cae9']);
+              }, i*55);
+            }
+            setTimeout(()=>{ hitFlash.style.opacity='0'; }, 400);
           }, 280);
-          setTimeout(showFatalityText, 900);
-          endFatality(4400);
+          setTimeout(showFatalityText, 1100);
+          endFatality(5000);
+        }
+      }, 110);
+    },
+
+    // ═══ GELO — Congela sólido e estilhaça ═══
+    freeze(){
+      winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
+      playHit('whoosh');
+      let frost = 0;
+      const frostIv = setInterval(()=>{
+        frost++;
+        fatBurst(loseF.pos.x+(Math.random()-0.5)*1.2, FLOOR_Y+0.1+frost*0.12, 0, 12, 'aura');
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y*0.4, 0, 8, 'spark');
+        loseF.vel.set(0,0,0);
+        loseF.root.rotation.z = 0.15+frost*0.03;
+        flash('#80deea', 0.22+frost*0.03, 0.1);
+        shakeCamera = 0.5+frost*0.1;
+        if(frost%2===0) playHit('special');
+        if(frost >= 9){
+          clearInterval(frostIv);
+          flash('#b2ebf2', 0.9, 0.4); shakeCamera = 2.2; playHit('super');
+          loseF.root.scale.set(1.06, 1.06, 1.06);
+          fatBlood(12, [pColor, fColor, '#ffffff']);
+          setTimeout(()=>{
+            winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
+            setTimeout(()=>{
+              flash('#ffffff', 1, 0.55); shakeCamera = 4.2; playHit('super'); playHit('heavy');
+              loseF.root.scale.set(0.25, 0.55, 0.25);
+              liftLoser(8, 9);
+              for(let i=0;i<14;i++){
+                setTimeout(()=>{
+                  fatBurst(loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y+Math.random(), 0, 14, 'explode');
+                  fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+1, 0, 6, 'spark');
+                  fatBlood(8, [pColor, fColor, '#ffffff', '#80deea']);
+                }, i*48);
+              }
+              setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 1000);
+            }, 300);
+          }, 500);
+          setTimeout(showFatalityText, 1600);
+          endFatality(5400);
+        }
+      }, 95);
+    },
+
+    // ═══ SOM — Ondas sônicas que despedaçam ═══
+    sonic(){
+      winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
+      playHit('whoosh');
+      let waves = 0;
+      const wIv = setInterval(()=>{
+        waves++;
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 16, 'ring');
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 10, 'explode');
+        loseF.root.rotation.z = 0.5+Math.sin(waves*1.2)*0.4;
+        loseF.pos.x += winF.facing * 0.18;
+        flash(fColor, 0.35, 0.12);
+        shakeCamera = 1+waves*0.25;
+        playHit(waves%2?'special':'punch');
+        fatBlood(7, [pColor, fColor, '#e1bee7']);
+        if(waves >= 7){
+          clearInterval(wIv);
+          flash(fColor, 1, 0.55); shakeCamera = 4; playHit('super');
+          liftLoser(13, 12);
+          for(let i=0;i<10;i++){
+            setTimeout(()=>{
+              fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 16, 'ring');
+              fatBlood(9, [pColor, fColor, '#ffffff']);
+            }, i*50);
+          }
+          setTimeout(showFatalityText, 1000);
+          endFatality(5000);
         }
       }, 150);
     },
-    freeze(afterApproach){
-      winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
-      playHit('whoosh');
-      setTimeout(()=>{
-        // Freeze solid
-        flash('#80deea', 0.6, 0.4); playHit('special');
-        loseF.root.rotation.z = 0;
-        loseF.root.position.y = FIGHTER_GROUND_Y;
-        spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 30, 'hit');
-        // Ice crystals
-        for(let i=0;i<6;i++){
-          setTimeout(()=>{
-            spawnP(sys, loseF.pos.x+(Math.random()-0.5), loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*1.5, 0, 8, 'aura');
-            const [sx,sy]=screenXY(loseF, Math.random());
-            bloodBurst(sx, sy, 6, [pColor, '#ffffff', '#b2ebf2']);
-          }, i*100);
-        }
-        setTimeout(()=>{
-          winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
-          setTimeout(()=>{
-            // Shatter the ice
-            flash(fColor, 0.9, 0.4); shakeCamera = 3.5; playHit('super'); playHit('heavy');
-            for(let i=0;i<10;i++){
-              setTimeout(()=>{
-                const [sx,sy]=screenXY(loseF, Math.random());
-                bloodBurst(sx, sy, 10, [pColor, fColor, '#ffffff']);
-                spawnP(sys, loseF.pos.x+(Math.random()-0.5)*1.5, loseF.pos.y+FIGHTER_GROUND_Y+Math.random(), 0, 12, 'super');
-              }, i*50);
-            }
-            liftLoser(10, 10);
-          }, 350);
-        }, 900);
-        setTimeout(showFatalityText, 1800);
-        endFatality(5000);
-      }, 400);
-    },
-    sonic(afterApproach){
-      winF.setState(STATES.ELBOW, true); winF.stateTime = 0;
-      playHit('whoosh');
-      // Sonic waves
-      let waves = 0;
-      const waveIv = setInterval(()=>{
-        waves++;
-        winF.setState(waves%2?STATES.PUNCH:STATES.ELBOW, true); winF.stateTime = 0.1;
-        flash(fColor, 0.35, 0.12);
-        shakeCamera = 0.9 + waves*0.2;
-        playHit(waves%2?'punch':'elbow');
-        spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 15, 'hit');
-        const [sx,sy]=screenXY(loseF);
-        bloodBurst(sx, sy, 12, [pColor, fColor, '#e1bee7']);
-        loseF.pos.x += winF.facing * 0.3;
-        loseF.root.rotation.z = 0.7 + Math.sin(waves)*0.4;
-        if(waves>=7){
-          clearInterval(waveIv);
-          winF.setState(STATES.SPECIAL, true); winF.stateTime = 0.4;
-          setTimeout(()=>{
-            createProjectile(winF, true);
-            flash(fColor, 0.9, 0.5); shakeCamera = 3.5; playHit('super');
-            liftLoser(18, 14);
-            bloodBurst(...screenXY(loseF), 45, [pColor, fColor, '#ffffff']);
-            spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 50, 'super');
-          }, 200);
-          setTimeout(showFatalityText, 800);
-          endFatality(4400);
-        }
-      }, 140);
-    },
-    sting(afterApproach){
+
+    // ═══ ESCORPIÃO — Ferrões de veneno + golpe final ═══
+    sting(){
       winF.setState(STATES.ELBOW, true); winF.stateTime = 0;
       playHit('whoosh');
       setTimeout(()=>{
-        // Venom stings
         let stings = 0;
         const stingIv = setInterval(()=>{
           stings++;
-          winF.setState(stings%2?STATES.ELBOW:STATES.PUNCH, true); winF.stateTime = 0.12;
-          flash(fColor, 0.4, 0.12);
-          shakeCamera = 0.8 + stings*0.2;
+          winF.setState(stings%2?STATES.ELBOW:STATES.PUNCH, true); winF.stateTime = 0.1;
+          fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.4, 0, 12, 'spark');
+          fatBurst(loseF.pos.x+(Math.random()-0.5)*0.5, loseF.pos.y+FIGHTER_GROUND_Y, 0, 8, 'hit');
+          flash(fColor, 0.4, 0.1);
+          shakeCamera = 0.9+stings*0.2;
           playHit(stings%2?'elbow':'punch');
-          const [sx,sy]=screenXY(loseF);
-          bloodBurst(sx, sy, 14, [pColor, fColor, '#aaff00']);
-          spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 12, 'hit');
-          loseF.root.rotation.z = 0.9 + stings*0.1;
-          // Poison green tint
-          hitFlash.style.background = 'rgba(100,200,0,0.15)';
-          hitFlash.style.opacity = '0.3';
-          if(stings>=5){
+          loseF.root.rotation.z = 0.8+stings*0.1;
+          loseF.pos.x += winF.facing*0.15;
+          fatBlood(9, [pColor, fColor, '#aaff00', '#76ff03']);
+          if(stings >= 6){
             clearInterval(stingIv);
-            winF.setState(STATES.UPPERCUT, true); winF.stateTime = 0;
+            winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
             setTimeout(()=>{
-              flash(fColor, 0.85, 0.5); shakeCamera = 3; playHit('super');
-              liftLoser(14, 16);
-              bloodBurst(...screenXY(loseF), 40, [pColor, fColor, '#76ff03', '#cc0000']);
-              spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 45, 'super');
-              // Poison drips
-              for(let i=0;i<6;i++) setTimeout(()=> spawnBloodDrip(Math.random()*innerWidth, 0, '#76ff03'), i*150);
-            }, 280);
-            setTimeout(showFatalityText, 900);
-            endFatality(4500);
+              flash(fColor, 1, 0.5); shakeCamera = 3.8; playHit('super');
+              liftLoser(11, 14);
+              // Veneno sobe pelo corpo
+              for(let i=0;i<12;i++){
+                setTimeout(()=>{
+                  fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+i*0.12, 0, 12, 'rise');
+                  fatBlood(8, [pColor, fColor, '#aaff00']);
+                  loseF.root.scale.setScalar(Math.max(0.3, 1-i*0.06));
+                }, i*55);
+              }
+              setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 900);
+            }, 300);
+            setTimeout(showFatalityText, 1400);
+            endFatality(5200);
           }
-        }, 160);
-      }, 250);
+        }, 130);
+      }, 200);
     },
-    // ═══ FATALITIES DE CHEFES ═══
+
+    // ═══ TITÃ — Pisadas colossais e esmagamento ═══
     titan_judgment(){
-      // Colosso: levanta o oponente e esmaga no chão 3x
       winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
       playHit('whoosh');
-      setTimeout(()=>{
-        flash(fColor, 0.5, 0.2); shakeCamera = 2; playHit('heavy');
-        loseF.root.position.y = FIGHTER_GROUND_Y + 1.5;
-        loseF.root.rotation.z = 0;
-        loseF.pos.y = FLOOR_Y + 1.2;
-        loseF.isGrounded = false;
-        let slams = 0;
-        const slamIv = setInterval(()=>{
-          slams++;
-          loseF.pos.y = FLOOR_Y;
-          loseF.root.position.y = 0.2;
-          loseF.root.rotation.z = 1.3;
-          flash(fColor, 0.7, 0.2); shakeCamera = 2.5 + slams*0.5; playHit('super');
-          spawnP(sys, loseF.pos.x, FLOOR_Y, 0, 35, 'ground');
-          const [sx,sy]=screenXY(loseF,0.1);
-          bloodBurst(sx, sy, 25, [pColor, fColor, '#5d4037', '#ffd600']);
-          if(slams < 3){
+      let stomps = 0;
+      const stompIv = setInterval(()=>{
+        stomps++;
+        winF.setState(STATES.HEAVY, true); winF.stateTime = 0.1;
+        fatBurst(loseF.pos.x+(Math.random()-0.5)*2.5, FLOOR_Y+0.05, 0, 20, 'ground');
+        fatBurst(loseF.pos.x, FLOOR_Y+0.2, 0, 12, 'explode');
+        flash(fColor, 0.45, 0.15);
+        shakeCamera = 1.5+stomps*0.35;
+        playHit('heavy');
+        loseF.root.rotation.z = 0.6+stomps*0.1;
+        loseF.root.scale.y = Math.max(0.35, 1-stomps*0.12);
+        loseF.root.position.y = Math.max(0.1, FIGHTER_GROUND_Y - stomps*0.15);
+        fatBlood(10, [pColor, fColor, '#8d6e63']);
+        if(stomps >= 5){
+          clearInterval(stompIv);
+          flash('#ffd600', 1, 0.6); shakeCamera = 5; playHit('super');
+          loseF.root.scale.set(1.4, 0.12, 1.4);
+          loseF.root.position.y = 0.06;
+          for(let i=0;i<14;i++){
             setTimeout(()=>{
-              loseF.pos.y = FLOOR_Y + 1.5;
-              loseF.root.position.y = FIGHTER_GROUND_Y + 1.2;
-              loseF.root.rotation.z = 0;
-              playHit('whoosh');
-            }, 200);
-          } else {
-            clearInterval(slamIv);
-            setTimeout(()=>{
-              liftLoser(8, 18);
-              flash('#ffd600', 0.95, 0.5); shakeCamera = 4; playHit('super');
-              bloodBurst(...screenXY(loseF), 50, [pColor, fColor, '#ffd600']);
-              spawnP(sys, loseF.pos.x, FLOOR_Y, 0, 60, 'super');
-            }, 300);
-            setTimeout(showFatalityText, 900);
-            endFatality(5000);
+              fatBurst(loseF.pos.x+(Math.random()-0.5)*3, FLOOR_Y+0.1, 0, 16, 'ground');
+              fatBlood(10, [pColor, fColor, '#ffd600', '#5d4037']);
+            }, i*45);
           }
-        }, 550);
-      }, 400);
+          setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 1000);
+          setTimeout(showFatalityText, 1200);
+          endFatality(5500);
+        }
+      }, 280);
     },
+
+    // ═══ FÊNIX — Voa, agarra, queima no ar até cinzas ═══
     phoenix_ashes(){
-      // FÊNIX: voa ao céu, agarra o inimigo no ar e o queima até virar cinzas
       winF.setState(STATES.JUMP, true); winF.stateTime = 0;
       playHit('whoosh');
       const startY = winF.pos.y;
@@ -1969,18 +2491,16 @@ function executeFatality() {
       const flyIv = setInterval(()=>{
         flyT++;
         winF.pos.y = startY + Math.min(7.5, flyT * 0.5);
-        winF.isGrounded = false;
-        winF.vel.y = 0;
+        winF.isGrounded = false; winF.vel.y = 0;
         winF.auraRing.scale.setScalar(1.4 + flyT * 0.1);
         winF.auraRing2.scale.setScalar(1.2 + flyT * 0.08);
         winF.auraRing.material.opacity = 1;
-        spawnP(sys, winF.pos.x+(Math.random()-0.5)*0.6, winF.pos.y+FIGHTER_GROUND_Y*0.4, 0, 12, 'super');
-        spawnP(sys, winF.pos.x, winF.pos.y+FIGHTER_GROUND_Y, 0, 6, 'aura');
+        fatBurst(winF.pos.x+(Math.random()-0.5)*0.6, winF.pos.y+FIGHTER_GROUND_Y*0.4, 0, 12, 'rise');
+        fatBurst(winF.pos.x, winF.pos.y+FIGHTER_GROUND_Y, 0, 6, 'aura');
         flash(fColor, 0.12+flyT*0.025, 0.08);
         shakeCamera = 0.35 + flyT*0.06;
         if(flyT >= 16){
           clearInterval(flyIv);
-          // Mergulha e pega o inimigo
           winF.setState(STATES.UPPERCUT, true); winF.stateTime = 0;
           playHit('whoosh');
           const diveY = winF.pos.y;
@@ -1990,38 +2510,34 @@ function executeFatality() {
             const p = Math.min(1, diveT/10);
             winF.pos.y = diveY + (loseF.pos.y + 1.2 - diveY) * p;
             winF.pos.x += (loseF.pos.x - winF.pos.x) * 0.2;
-            spawnP(sys, winF.pos.x, winF.pos.y+FIGHTER_GROUND_Y, 0, 8, 'trail');
+            fatBurst(winF.pos.x, winF.pos.y+FIGHTER_GROUND_Y, 0, 8, 'trail');
             if(diveT >= 10){
               clearInterval(diveIv);
               flash('#ffd600', 0.75, 0.2); shakeCamera = 2.2; playHit('heavy');
-              // Sobe com o inimigo preso
               let liftT = 0;
               const liftIv = setInterval(()=>{
                 liftT++;
                 winF.pos.y += 0.42;
                 loseF.pos.y = winF.pos.y - 0.35;
                 loseF.pos.x = winF.pos.x + winF.facing * 0.45;
-                loseF.isGrounded = false;
-                loseF.vel.set(0,0,0);
+                loseF.isGrounded = false; loseF.vel.set(0,0,0);
                 loseF.root.rotation.z = 0.35 + liftT * 0.07;
-                spawnP(sys, loseF.pos.x+(Math.random()-0.5), loseF.pos.y+FIGHTER_GROUND_Y, 0, 12, 'super');
-                spawnP(sys, winF.pos.x, winF.pos.y+FIGHTER_GROUND_Y, 0, 6, 'aura');
-                const [sx,sy]=screenXY(loseF, Math.random());
-                bloodBurst(sx, sy, 7, [pColor, fColor, '#ffaa00']);
+                fatBurst(loseF.pos.x+(Math.random()-0.5), loseF.pos.y+FIGHTER_GROUND_Y, 0, 12, 'rise');
+                fatBurst(winF.pos.x, winF.pos.y+FIGHTER_GROUND_Y, 0, 6, 'aura');
+                fatBlood(7, [pColor, fColor, '#ffaa00']);
                 if(liftT%3===0) playHit('special');
                 flash(fColor, 0.2, 0.08);
                 shakeCamera = 0.7 + liftT*0.08;
                 if(liftT >= 14){
                   clearInterval(liftIv);
-                  // Queima no ar até virar cinzas
                   winF.setState(STATES.SUPER, true); winF.stateTime = 0.15;
                   flash('#ff3d00', 1, 0.45); shakeCamera = 4; playHit('super');
                   let burns = 0;
                   const burnIv = setInterval(()=>{
                     burns++;
-                    spawnP(sys, loseF.pos.x+(Math.random()-0.5)*1.4, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*1.2, 0, 20, 'super');
-                    const [a,b]=screenXY(loseF, Math.random()*1.1);
-                    bloodBurst(a, b, 12, [pColor, fColor, '#ffd600', '#ffaa00', '#ffffff']);
+                    fatBurst(loseF.pos.x+(Math.random()-0.5)*1.4, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*1.2, 0, 20, 'rise');
+                    fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 10, 'spark');
+                    fatBlood(10, [pColor, fColor, '#ffd600', '#ffaa00', '#ffffff']);
                     loseF.root.scale.setScalar(Math.max(0.18, 1 - burns*0.08));
                     loseF.root.rotation.z += 0.12;
                     flash(burns%2 ? '#ffd600' : '#ff3d00', 0.35+burns*0.05, 0.1);
@@ -2033,23 +2549,17 @@ function executeFatality() {
                       loseF.root.visible = false;
                       for(let i=0;i<14;i++){
                         setTimeout(()=>{
-                          const [x,y]=screenXY(loseF, Math.random()*2);
-                          bloodBurst(x, y, 14, [pColor, fColor, '#ffd600', '#ffffff', '#ff6600']);
-                          spawnP(sys, loseF.pos.x+(Math.random()-0.5)*2.5, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2.5, 0, 16, 'super');
+                          fatBurst(loseF.pos.x+(Math.random()-0.5)*2.5, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2.5, 0, 16, 'explode');
+                          fatBlood(12, [pColor, fColor, '#ffd600', '#ffffff', '#ff6600']);
                         }, i*40);
                       }
                       setTimeout(()=>{
-                        winF.pos.y = FLOOR_Y;
-                        winF.isGrounded = true;
+                        winF.pos.y = FLOOR_Y; winF.isGrounded = true;
                         winF.root.position.y = FIGHTER_GROUND_Y;
-                        winF.auraRing.scale.setScalar(1);
-                        winF.auraRing2.scale.setScalar(1);
-                        loseF.root.visible = true;
-                        loseF.root.scale.set(1,1,1);
-                        loseF.root.rotation.set(0,0,1.5);
-                        loseF.pos.y = FLOOR_Y;
-                        loseF.root.position.y = 0.25;
-                        slamLoser();
+                        winF.auraRing.scale.setScalar(1); winF.auraRing2.scale.setScalar(1);
+                        loseF.root.visible = true; loseF.root.scale.set(1,1,1);
+                        loseF.root.rotation.set(0,0,1.5); loseF.pos.y = FLOOR_Y;
+                        loseF.root.position.y = 0.25; slamLoser();
                       }, 850);
                       setTimeout(showFatalityText, 450);
                       endFatality(5600);
@@ -2062,191 +2572,222 @@ function executeFatality() {
         }
       }, 48);
     },
+
+    // ═══ LEVIATÃ — Tentáculos puxam, voragem engole ═══
     abyss_vortex(){
-      // Leviatã: tentáculos puxam, depois voragem engole
       winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
       playHit('whoosh');
       let pulls = 0;
-      const midX = (winF.pos.x + loseF.pos.x) / 2;
       const pullIv = setInterval(()=>{
         pulls++;
-        loseF.pos.x += (winF.pos.x + winF.facing*1.5 - loseF.pos.x) * 0.12;
+        loseF.pos.x += (winF.pos.x + winF.facing*1.5 - loseF.pos.x) * 0.14;
         loseF.root.rotation.z = 0.5 + Math.sin(pulls)*0.4;
-        spawnP(sys, loseF.pos.x+(Math.random()-0.5)*1.5, FLOOR_Y+0.2, 0, 12, 'ground');
-        spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y*0.5, 0, 8, 'aura');
-        flash(fColor, 0.25, 0.12);
-        shakeCamera = 0.7 + pulls*0.1;
+        fatBurst(loseF.pos.x+(Math.random()-0.5)*1.5, FLOOR_Y+0.15, 0, 12, 'ground');
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y*0.5, 0, 10, 'spiral');
+        flash(fColor, 0.25, 0.1);
+        shakeCamera = 0.8+pulls*0.12;
         if(pulls%3===0) playHit('special');
+        fatBlood(6, [pColor, fColor, '#00897b']);
         if(pulls >= 12){
           clearInterval(pullIv);
-          // Voragem
           let vortex = 0;
-          loseF.root.position.y = FIGHTER_GROUND_Y;
           const vorIv = setInterval(()=>{
             vortex++;
-            loseF.root.rotation.y += 0.8;
-            loseF.root.scale.setScalar(Math.max(0.1, 1 - vortex*0.08));
-            loseF.pos.y = FLOOR_Y + Math.sin(vortex*0.5)*0.5;
-            spawnP(sys, loseF.pos.x, FLOOR_Y+0.3, 0, 20, 'super');
+            loseF.root.rotation.y += 0.85;
+            loseF.root.scale.setScalar(Math.max(0.08, 1-vortex*0.09));
+            loseF.pos.y = FLOOR_Y + Math.sin(vortex*0.5)*0.4;
+            fatBurst(loseF.pos.x, FLOOR_Y+0.3, 0, 18, 'spiral');
+            fatBurst(loseF.pos.x, FLOOR_Y+0.5, 0, 10, 'orbit');
             flash(fColor, 0.4+vortex*0.05, 0.1);
-            shakeCamera = 1.5 + vortex*0.2;
-            const [sx,sy]=screenXY(loseF);
-            bloodBurst(sx, sy, 10, [pColor, fColor, '#00bcd4']);
+            shakeCamera = 1.5+vortex*0.2;
+            fatBlood(8, [pColor, fColor, '#00bcd4']);
             if(vortex >= 10){
               clearInterval(vorIv);
-              loseF.root.scale.set(1,1,1);
-              loseF.root.rotation.y = 0;
+              loseF.root.scale.set(1,1,1); loseF.root.rotation.y = 0;
               loseF.root.visible = false;
-              flash('#00e5ff', 1, 0.6); shakeCamera = 4; playHit('super');
-              bloodBurst(...screenXY(loseF), 55, [pColor, fColor, '#00e5ff', '#004d40']);
-              spawnP(sys, loseF.pos.x, FLOOR_Y+0.5, 0, 60, 'super');
-              setTimeout(()=>{ loseF.root.visible = true; loseF.root.rotation.z = 1.5; loseF.pos.y = FLOOR_Y; }, 500);
-              setTimeout(showFatalityText, 700);
-              endFatality(4800);
+              flash('#00e5ff', 1, 0.6); shakeCamera = 4.5; playHit('super');
+              for(let i=0;i<12;i++){
+                setTimeout(()=>{
+                  fatBurst(loseF.pos.x, FLOOR_Y+0.4, 0, 18, 'super');
+                  fatBlood(10, [pColor, fColor, '#00e5ff', '#004d40']);
+                }, i*40);
+              }
+              setTimeout(()=>{ loseF.root.visible = true; loseF.root.rotation.z = 1.5; loseF.pos.y = FLOOR_Y; slamLoser(); }, 550);
+              setTimeout(showFatalityText, 750);
+              endFatality(5000);
             }
-          }, 80);
+          }, 75);
+        }
+      }, 85);
+    },
+
+    // ═══ REI VAZIO — Apaga a existência ═══
+    total_null(){
+      winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
+      playHit('whoosh');
+      hitFlash.style.background = '#000000';
+      hitFlash.style.transition = 'opacity 0.5s';
+      hitFlash.style.opacity = '0.4';
+      let nullT = 0;
+      const nullIv = setInterval(()=>{
+        nullT++;
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 16, 'orbit');
+        fatBurst(loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y, 0, 10, 'spiral');
+        loseF.root.scale.setScalar(Math.max(0.05, 1-nullT*0.09));
+        loseF.root.rotation.y += 0.4;
+        loseF.root.material && (loseF.root.material.opacity = Math.max(0.1, 1-nullT*0.08));
+        flash('#1a0022', 0.3+nullT*0.05, 0.12);
+        shakeCamera = 0.7+nullT*0.2;
+        fatBlood(7, [pColor, fColor, '#7b1fa2', '#000000']);
+        if(nullT%2===0) playHit('special');
+        if(nullT >= 12){
+          clearInterval(nullIv);
+          loseF.root.visible = false;
+          flash('#e040fb', 1, 0.7); shakeCamera = 4.5; playHit('super');
+          for(let i=0;i<14;i++){
+            setTimeout(()=>{
+              fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 16, 'orbit');
+              fatBlood(9, [pColor, fColor, '#e040fb', '#000']);
+            }, i*40);
+          }
+          setTimeout(()=>{
+            hitFlash.style.opacity = '0';
+            loseF.root.visible = true; loseF.root.scale.set(1,1,1);
+            loseF.root.rotation.set(0,0,1.5); slamLoser();
+          }, 800);
+          setTimeout(showFatalityText, 700);
+          endFatality(5200);
         }
       }, 90);
     },
-    total_null(){
-      // Rei Vazio: apaga o oponente da existência
-      winF.setState(STATES.SUPER, true); winF.stateTime = 0;
-      playHit('whoosh');
-      // Escurece a tela
-      hitFlash.style.background = '#000';
-      hitFlash.style.transition = 'opacity 1s';
-      hitFlash.style.opacity = '0.7';
-      let voidT = 0;
-      const voidIv = setInterval(()=>{
-        voidT++;
-        spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 20, 'super');
-        spawnP(sys, loseF.pos.x+(Math.random()-0.5)*3, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2, 0, 12, 'aura');
-        loseF.root.scale.setScalar(Math.max(0.05, 1 - voidT*0.07));
-        loseF.root.rotation.y += 0.3;
-        flash('#e040fb', 0.2+voidT*0.04, 0.1);
-        shakeCamera = 0.6 + voidT*0.2;
-        const [sx,sy]=screenXY(loseF);
-        bloodBurst(sx, sy, 8, [pColor, fColor, '#7b1fa2', '#000']);
-        if(voidT%2===0) playHit('special');
-        if(voidT >= 12){
-          clearInterval(voidIv);
-          loseF.root.visible = false;
-          loseF.root.scale.set(1,1,1);
-          loseF.root.rotation.y = 0;
-          flash('#e040fb', 1, 0.7); shakeCamera = 4.5; playHit('super');
-          for(let i=0;i<15;i++){
-            setTimeout(()=>{
-              spawnBloodParticles(Math.random()*innerWidth, Math.random()*innerHeight*0.6, 10, pColor);
-              spawnBloodParticles(Math.random()*innerWidth, Math.random()*innerHeight*0.5, 8, fColor);
-            }, i*40);
-          }
-          spawnP(sys, loseF.pos.x, FLOOR_Y+1, 0, 70, 'super');
-          setTimeout(()=>{ loseF.root.visible = true; loseF.root.rotation.z = 1.5; loseF.pos.y = FLOOR_Y; }, 800);
-          setTimeout(showFatalityText, 900);
-          endFatality(5000);
-        }
-      }, 100);
-    },
+
+    // ═══ TEMPESTADE — Julgamento celeste: raios do céu ═══
     sky_judgment(){
-      // Tempestade: raios do céu em sequência + tornado final
       winF.setState(STATES.SPECIAL, true); winF.stateTime = 0;
       playHit('whoosh');
       let bolts = 0;
       const boltIv = setInterval(()=>{
         bolts++;
-        createProjectile(winF, bolts >= 4);
-        flash(bolts%2 ? '#ffffff' : fColor, 0.6, 0.15);
-        shakeCamera = 1.2 + bolts*0.4;
-        playHit(bolts >= 4 ? 'super' : 'special');
-        const [sx,sy]=screenXY(loseF);
-        bloodBurst(sx, sy, 16, [pColor, fColor, '#00e5ff', '#ffffff']);
-        spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+1.5, 0, 25, 'super');
-        loseF.pos.x += winF.facing * 0.2;
-        loseF.root.rotation.z = 0.8 + bolts*0.1;
+        createProjectile(winF, bolts>=3);
+        fatBurst(loseF.pos.x+(Math.random()-0.5)*1.5, loseF.pos.y+FIGHTER_GROUND_Y+2.5, 0, 12, 'fall');
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+1, 0, 14, 'spark');
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+2, 0, 8, 'beam');
+        flash(bolts%2?'#ffffff':fColor, 0.5, 0.12);
+        shakeCamera = 1.2+bolts*0.35;
+        playHit(bolts>=3?'super':'special');
+        loseF.root.rotation.z = 0.6+bolts*0.12;
+        loseF.pos.x += winF.facing*0.15;
+        fatBlood(8, [pColor, fColor, '#ffffff', '#00e5ff']);
         if(bolts >= 5){
           clearInterval(boltIv);
-          // Tornado final
-          let spin = 0;
-          loseF.root.rotation.z = 0;
-          loseF.root.position.y = FIGHTER_GROUND_Y;
-          const spinIv = setInterval(()=>{
-            spin++;
-            loseF.root.rotation.y += 0.9;
-            loseF.pos.y = FLOOR_Y + Math.sin(spin*0.4)*2 + 1;
-            spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 12, 'aura');
-            if(spin%2===0) flash(fColor, 0.3, 0.08);
-            shakeCamera = 1.5;
-            if(spin >= 18){
-              clearInterval(spinIv);
-              loseF.root.rotation.y = 0;
-              liftLoser(20, 18);
-              flash('#ffee00', 1, 0.6); shakeCamera = 4; playHit('super');
-              bloodBurst(...screenXY(loseF), 50, [pColor, fColor, '#ffffff', '#00e5ff']);
-              spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 55, 'super');
-              setTimeout(showFatalityText, 600);
-              endFatality(4800);
-            }
-          }, 45);
+          flash('#ffee00', 1, 0.6); shakeCamera = 5; playHit('super');
+          liftLoser(16, 18);
+          for(let i=0;i<12;i++){
+            setTimeout(()=>{
+              fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2.5, 0, 16, 'spark');
+              fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+2, 0, 8, 'beam');
+              fatBlood(9, [pColor, fColor, '#ffffff']);
+            }, i*45);
+          }
+          setTimeout(showFatalityText, 1000);
+          endFatality(5200);
         }
-      }, 250);
+      }, 200);
     },
+
+    // ═══ PUNHO DE FERRO — Combo elemental + soco final ═══
     final_fist(){
-      // Punho de Ferro: combo elemental + soco final devastador
-      const elements = ['punch','elbow','kick','heavy','uppercut'];
+      const states = [STATES.PUNCH, STATES.ELBOW, STATES.KICK, STATES.HEAVY, STATES.UPPERCUT];
       let combo = 0;
       const doHit = ()=>{
         combo++;
-        const states = [STATES.PUNCH, STATES.ELBOW, STATES.KICK, STATES.HEAVY, STATES.UPPERCUT];
         winF.setState(states[Math.min(combo-1, states.length-1)], true);
-        winF.stateTime = 0.1;
-        flash(combo===5 ? '#ffd600' : fColor, 0.4+combo*0.1, 0.15);
-        shakeCamera = 1 + combo*0.4;
+        winF.stateTime = 0.08;
+        flash(combo===5 ? '#ffd600' : fColor, 0.4+combo*0.1, 0.12);
+        shakeCamera = 1.1 + combo*0.4;
         playHit(combo===5 ? 'super' : (combo%2?'punch':'heavy'));
-        const [sx,sy]=screenXY(loseF);
-        bloodBurst(sx, sy, 14+combo*3, [pColor, fColor, '#ffd600', '#ff1744']);
-        spawnP(sys, loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 15+combo*5, combo===5?'super':'hit');
-        loseF.pos.x += winF.facing * 0.25;
-        loseF.root.rotation.z = 0.7 + combo*0.15;
+        fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y+0.5, 0, 14+combo*3, combo===5?'explode':'hit');
+        fatBlood(10+combo*2, [pColor, fColor, '#ffd600', '#ff1744']);
+        loseF.pos.x += winF.facing * 0.28;
+        loseF.root.rotation.z = 0.6 + combo*0.15;
         if(combo < 5){
-          setTimeout(doHit, 200);
+          setTimeout(doHit, 190);
         } else {
-          // Soco final
           setTimeout(()=>{
             winF.setState(STATES.HEAVY, true); winF.stateTime = 0;
             setTimeout(()=>{
-              flash('#ffd600', 1, 0.7); shakeCamera = 5; playHit('super'); playHit('heavy');
-              liftLoser(22, 20);
-              for(let i=0;i<12;i++){
+              flash('#ffd600', 1, 0.7); shakeCamera = 5.5; playHit('super'); playHit('heavy');
+              liftLoser(20, 18);
+              for(let i=0;i<14;i++){
                 setTimeout(()=>{
-                  const [a,b]=screenXY(loseF, Math.random());
-                  bloodBurst(a, b, 15, [pColor, fColor, '#ffd600', '#ff1744', '#ffffff']);
-                  spawnP(sys, loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2, 0, 18, 'super');
-                }, i*50);
+                  fatBurst(loseF.pos.x+(Math.random()-0.5)*2.5, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2, 0, 18, 'explode');
+                  fatBlood(12, [pColor, fColor, '#ffd600', '#ff1744', '#ffffff']);
+                }, i*45);
               }
-            }, 350);
-          }, 300);
-          setTimeout(showFatalityText, 1400);
-          endFatality(5500);
+            }, 320);
+          }, 250);
+          setTimeout(showFatalityText, 1500);
+          endFatality(5800);
         }
       };
       winF.setState(STATES.WALK, true);
-      setTimeout(doHit, 200);
+      setTimeout(doHit, 180);
     },
   };
 
   function approachStep(){
+    // ═══ FASE 1: caminhada lenta estilo Mortal Kombat ═══
+    winF.setState(STATES.WALK, true);
     let approachT = 0;
-    const approachDur = 0.85;
+    const approachDur = 1.35;
     function step(){
       approachT += 1/60;
       const p = Math.min(1, approachT/approachDur);
       const ease = p*p*(3-2*p);
       winF.pos.x = startX + (approachTarget - startX) * ease;
       winF.facing = loseF.pos.x > winF.pos.x ? 1 : -1;
+      // Câmera acompanha o vencedor
+      if(camera){
+        const cx = (winF.pos.x + loseF.pos.x) / 2;
+        camera.position.x += (cx - camera.position.x) * 0.08;
+        camera.position.z += (10 - camera.position.z) * 0.05;
+        camera.position.y += (3.0 - camera.position.y) * 0.05;
+        camera.lookAt(cx, 1.4, 0);
+      }
+      // Vítima treme (tonta)
+      loseF.root.rotation.z = 0.9 + Math.sin(approachT*8)*0.08;
+      loseF.root.position.y = 0.4 + Math.sin(approachT*6)*0.03;
       if(p < 1){ requestAnimationFrame(step); return; }
-      startBloodAnimation();
-      const anim = FATALITY_ANIMS[effect] || FATALITY_ANIMS.crush;
-      anim();
+
+      // ═══ FASE 2: pose de deboche (taunt) ═══
+      winF.setState(STATES.IDLE, true);
+      winF.armPivotR.rotation.x = -0.3;
+      winF.armPivotL.rotation.x = -0.3;
+      playHit('whoosh');
+      // Close-up no vencedor
+      if(camera){
+        camera.position.z = 8.5;
+        camera.position.y = 2.8;
+        camera.fov = 38;
+        camera.updateProjectionMatrix();
+        camera.lookAt(winF.pos.x, 1.6, 0);
+      }
+      flash('rgba(80,0,0,0.4)', 0.35, 0.4);
+
+      setTimeout(()=>{
+        // ═══ FASE 3: EXECUÇÃO ═══
+        if(camera){
+          camera.position.z = 9.5;
+          camera.fov = 44;
+          camera.updateProjectionMatrix();
+          camera.lookAt((winF.pos.x+loseF.pos.x)/2, 1.5, 0);
+        }
+        startBloodAnimation();
+        startFatalityParticleLoop(effect);
+        fatalityOpenBurst(effect);
+        const anim = FATALITY_ANIMS[effect] || FATALITY_ANIMS.crush;
+        anim();
+      }, 700);
     }
     requestAnimationFrame(step);
   }
@@ -3298,7 +3839,7 @@ function buildLights(ch1,ch2){
 // ══════════════════════════════════════════════════════
 //  PARTICLE SYSTEM
 // ══════════════════════════════════════════════════════
-const MAX_P=280;
+const MAX_P=480;
 function makeParticleSys(ch){
   const geo=new THREE.BufferGeometry();
   const pos=new Float32Array(MAX_P*3);
@@ -3318,10 +3859,18 @@ function spawnP(sys,x,y,z,count,type='hit'){
     else if(type==='super'){d.maxLife=0.8+Math.random()*0.6;d.vx=(Math.random()-0.5)*14;d.vy=3+Math.random()*10;d.vz=(Math.random()-0.5)*8;}
     else if(type==='spiral'){d.maxLife=0.5+Math.random()*0.3;const a=Math.random()*Math.PI*2;d.vx=Math.cos(a)*3;d.vy=2+Math.random()*4;d.vz=Math.sin(a)*3;}
     else if(type==='ground'){d.maxLife=0.3+Math.random()*0.2;d.vx=(Math.random()-0.5)*8;d.vy=5+Math.random()*5;d.vz=(Math.random()-0.5)*4;}
+    else if(type==='orbit'){d.maxLife=0.7+Math.random()*0.5;const a=Math.random()*Math.PI*2,r=1.2+Math.random()*1.8;d.vx=Math.cos(a)*r;d.vy=(Math.random()-0.3)*3;d.vz=Math.sin(a)*r;}
+    else if(type==='rise'){d.maxLife=0.9+Math.random()*0.6;d.vx=(Math.random()-0.5)*2;d.vy=4+Math.random()*8;d.vz=(Math.random()-0.5)*2;}
+    else if(type==='fall'){d.maxLife=0.8+Math.random()*0.5;d.vx=(Math.random()-0.5)*3;d.vy=-2-Math.random()*6;d.vz=(Math.random()-0.5)*3;}
+    else if(type==='explode'){d.maxLife=0.5+Math.random()*0.4;const a=Math.random()*Math.PI*2,p=Math.random()*Math.PI;const sp=6+Math.random()*12;d.vx=Math.sin(p)*Math.cos(a)*sp;d.vy=Math.cos(p)*sp;d.vz=Math.sin(p)*Math.sin(a)*sp;}
+    else if(type==='beam'){d.maxLife=0.35+Math.random()*0.25;d.vx=(Math.random()-0.5)*1.5;d.vy=(Math.random()-0.5)*1.5;d.vz=(Math.random()-0.5)*1.5;}
+    else if(type==='ring'){d.maxLife=0.55+Math.random()*0.35;const a=Math.random()*Math.PI*2;const r=2+Math.random()*2;d.vx=Math.cos(a)*r;d.vy=0.5+Math.random()*2;d.vz=Math.sin(a)*r;}
+    else if(type==='spark'){d.maxLife=0.25+Math.random()*0.3;d.vx=(Math.random()-0.5)*16;d.vy=2+Math.random()*12;d.vz=(Math.random()-0.5)*10;}
     else{d.maxLife=0.2+Math.random()*0.2;d.vx=(Math.random()-0.5)*2;d.vy=0.5+Math.random()*1.5;d.vz=(Math.random()-0.5)*2;}
-    sys.pos[i*3]=x+(Math.random()-0.5)*0.4;
-    sys.pos[i*3+1]=y+(Math.random()-0.5)*0.3;
-    sys.pos[i*3+2]=z+(Math.random()-0.5)*0.3;
+    const spread = (type==='explode'||type==='orbit'||type==='ring') ? 0.15 : 0.4;
+    sys.pos[i*3]=x+(Math.random()-0.5)*spread;
+    sys.pos[i*3+1]=y+(Math.random()-0.5)*spread*0.8;
+    sys.pos[i*3+2]=z+(Math.random()-0.5)*spread;
     n++;
   }
 }
