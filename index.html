@@ -546,14 +546,14 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
   </div>
   <div id="controls">
     <div class="ctrl-box">
-      <span class="ctrl-key">W</span> Pular &nbsp;<span class="ctrl-key">A</span><span class="ctrl-key">D</span> Mover &nbsp;<span class="ctrl-key">A+A</span> Dash<br>
+      <span class="ctrl-key">W</span> Pular &nbsp;<span class="ctrl-key">S</span> Agachar &nbsp;<span class="ctrl-key">A</span><span class="ctrl-key">D</span> Mover &nbsp;<span class="ctrl-key">A+A</span> Dash<br>
       <span class="ctrl-key">SPACE</span> Soco &nbsp;<span class="ctrl-key">V</span> Chute &nbsp;<span class="ctrl-key">Q</span> Defesa<br>
       <span class="ctrl-key">F</span> Cotovelo &nbsp;<span class="ctrl-key">C</span> Uppercut &nbsp;<span class="ctrl-key">G</span> Soco Pesado<br>
       <span class="ctrl-key">B</span> Rasteira &nbsp;<span class="ctrl-key">E</span> Especial &nbsp;<span class="ctrl-key">R</span> SUPER &nbsp;<span class="ctrl-key">T</span> Teleporte &nbsp;<span class="ctrl-key">H</span> Gancho (2x)<br>
       <span style="color:rgba(0,229,255,0.7)">🎮 USB: A=Pular X=Soco(segurar=combo) Y=Chute(segurar=combo) B=Defesa L1=Esp R1=Super L2=Pesado R2=Rasteira Select=Cotovelo Start=Uppercut L3=Teleporte</span>
     </div>
     <div class="ctrl-box" style="text-align:right">
-      <span class="ctrl-key">↑</span> Pular &nbsp;<span class="ctrl-key">←</span><span class="ctrl-key">→</span> Mover &nbsp;<span class="ctrl-key">←+←</span> Dash<br>
+      <span class="ctrl-key">↑</span> Pular &nbsp;<span class="ctrl-key">↓</span> Agachar &nbsp;<span class="ctrl-key">←</span><span class="ctrl-key">→</span> Mover &nbsp;<span class="ctrl-key">←+←</span> Dash<br>
       <span class="ctrl-key">L</span> Soco &nbsp;<span class="ctrl-key">.</span> Chute &nbsp;<span class="ctrl-key">P</span> Defesa<br>
       <span class="ctrl-key">K</span> Cotovelo &nbsp;<span class="ctrl-key">U</span> Uppercut &nbsp;<span class="ctrl-key">J</span> Soco Pesado<br>
       <span class="ctrl-key">M</span> Rasteira &nbsp;<span class="ctrl-key">O</span> Especial &nbsp;<span class="ctrl-key">I</span> SUPER &nbsp;<span class="ctrl-key">;</span> Teleporte &nbsp;<span class="ctrl-key">N</span> Gancho (2x)<br>
@@ -4316,7 +4316,7 @@ function scheduleGhostHp(fighter){
 // ══════════════════════════════════════════════════════
 //  FIGHTER CLASS
 // ══════════════════════════════════════════════════════
-const STATES={IDLE:'idle',WALK:'walk',JUMP:'jump',DASH:'dash',PUNCH:'punch',KICK:'kick',BLOCK:'block',HURT:'hurt',SPECIAL:'special',SUPER:'super',KO:'ko',UPPERCUT:'uppercut',ELBOW:'elbow',HEAVY:'heavy',SWEEP:'sweep',TELEPORT:'teleport',HOOK:'hook'};
+const STATES={IDLE:'idle',WALK:'walk',JUMP:'jump',DASH:'dash',PUNCH:'punch',KICK:'kick',BLOCK:'block',HURT:'hurt',SPECIAL:'special',SUPER:'super',KO:'ko',UPPERCUT:'uppercut',ELBOW:'elbow',HEAVY:'heavy',SWEEP:'sweep',TELEPORT:'teleport',HOOK:'hook',CROUCH:'crouch'};
 // Personagens com teletransporte aprimorado (mais longe, menos custo)
 const TELEPORT_CHARS = new Set(['space','darkness','tech','thunder','wind','moon','voidking','stormlord','phoenix']);
 class Fighter{
@@ -4525,6 +4525,16 @@ class Fighter{
     this.dashCooldown=Math.max(0,this.dashCooldown-1/60);
     this.teleportCooldown=Math.max(0,this.teleportCooldown-1/60);
     if(input.block){this.setState(STATES.BLOCK);this.vel.x*=0.6;this.regenStamina(0.012);return;}
+    // Agachar
+    if(input.crouch&&this.isGrounded&&!this._isBusy()&&this.state!==STATES.JUMP){
+      this.setState(STATES.CROUCH);
+      this.vel.x*=0.35;
+      this.regenStamina(0.018);
+      return;
+    }
+    if(this.state===STATES.CROUCH&&!input.crouch){
+      this.setState(STATES.IDLE);
+    }
     if(input.superKey&&this.superMeter>=MAX_SUPER&&this.state!==STATES.SUPER){this.superMeter=0;this.setState(STATES.SUPER);updateSuperBar(this);playHit('whoosh');return;}
     // Teletransporte: tecla T / ; ou botão gamepad (L3)
     if(input.teleport&&this.teleportCooldown<=0&&!this._isBusy()){
@@ -4612,7 +4622,7 @@ class Fighter{
     if(dashDir!==0&&this.isGrounded&&!this._isBusy()){this.vel.x=dashDir*22;this.setState(STATES.DASH);}
     const spd=9;const vx=input.left?-spd:input.right?spd:0;
     if(!this._isBusy()&&this.state!==STATES.DASH){this.vel.x=vx;if(vx!==0)this.setState(STATES.WALK);else if(this.state===STATES.WALK)this.setState(STATES.IDLE);}
-    if(input.jump&&this.isGrounded&&!this._isBusy()){this.vel.y=18;this.isGrounded=false;this.setState(STATES.JUMP);}
+    if(input.jump&&this.isGrounded&&!this._isBusy()&&this.state!==STATES.CROUCH&&!input.crouch){this.vel.y=18;this.isGrounded=false;this.setState(STATES.JUMP);}
     if(this.state===STATES.IDLE||this.state===STATES.WALK)this.regenStamina(0.008);
   }
   regenStamina(r){this.stamina=Math.min(this.maxStamina,this.stamina+r*60);}
@@ -4737,7 +4747,18 @@ class Fighter{
     const setA=(lx,rx,lz=0,rz=0)=>{this.armPivotL.rotation.x+=(lx-this.armPivotL.rotation.x)*la;this.armPivotR.rotation.x+=(rx-this.armPivotR.rotation.x)*la;this.armPivotL.rotation.z+=(lz-this.armPivotL.rotation.z)*la;this.armPivotR.rotation.z+=(rz-this.armPivotR.rotation.z)*la;};
     const setL=(lx,rx)=>{this.legPivotL.rotation.x+=(lx-this.legPivotL.rotation.x)*la;this.legPivotR.rotation.x+=(rx-this.legPivotR.rotation.x)*la;};
     switch(this.state){
-      case STATES.IDLE:{const b=Math.sin(t*2)*0.03;this.root.position.y=FIGHTER_GROUND_Y+b;this.head.rotation.z=Math.sin(t*1.5)*0.04;setA(0.3,0.3,-0.15,0.15);setL(0,0);break;}
+      case STATES.IDLE:{const b=Math.sin(t*2)*0.03;this.root.position.y=FIGHTER_GROUND_Y+b;this.head.rotation.z=Math.sin(t*1.5)*0.04;this.head.rotation.x*=0.85;this.root.rotation.x*=0.85;if(this.torso)this.torso.rotation.x*=0.85;setA(0.3,0.3,-0.15,0.15);setL(0,0);break;}
+      case STATES.CROUCH:{
+        this.root.position.y=FIGHTER_GROUND_Y-0.55;
+        this.root.rotation.x+=(-0.08-this.root.rotation.x)*0.15;
+        this.head.rotation.x+=(0.15-this.head.rotation.x)*0.12;
+        if(this.torso)this.torso.rotation.x+=(0.25-this.torso.rotation.x)*0.12;
+        setA(0.6,0.6,-0.2,0.2);
+        setL(1.1,1.1);
+        this.legPivotL.rotation.x=1.15;
+        this.legPivotR.rotation.x=1.15;
+        break;
+      }
       case STATES.WALK:{const w=Math.sin(t*10)*0.5;setA(-w*0.4,w*0.4);setL(w,-w);this.root.position.y=FIGHTER_GROUND_Y+Math.abs(Math.sin(t*10))*0.06;break;}
       case STATES.JUMP:{setL(-0.5,-0.5);setA(-0.8,-0.8);break;}
       case STATES.DASH:{this.root.rotation.z=this.vel.x>0?-0.25:0.25;setA(-1.2,-0.2);setL(0.3,-0.3);this.root.position.y=FIGHTER_GROUND_Y+0.08;break;}
@@ -5036,6 +5057,11 @@ function checkCombat(){
     const toVic=vic.pos.x-atk.pos.x;
     if(Math.sign(toVic)!==0&&Math.sign(toVic)!==atk.facing)return;
     const dist=Math.hypot(atk.pos.x-vic.pos.x,atk.pos.y-vic.pos.y);if(dist>range)return;
+    // Agachado esquiva golpes altos
+    if(vic.state===STATES.CROUCH){
+      const highAtks=['punch','uppercut','elbow','heavy'];
+      if(highAtks.indexOf(attackType)>=0){ atk.hitCooldown=0.12; return; }
+    }
     const isBlocked=vic.state===STATES.BLOCK&&vic.stamina>0;
     // Rasteira contorna parcialmente a guarda (golpe baixo)
     if(isBlocked){
@@ -5258,9 +5284,10 @@ function getInput(pid){
   // 4=L1 special, 5=R1 super, 6=L2 heavy, 7=R2 sweep, 10=L3 teleport, 11=R3 uppercut
   // elbows via buttons[8]/[9] or keys; USB controllers plug & play via Gamepad API
   if(pid===1)return{
-    left:keys['KeyA']||(gp?.axes[0]<-0.35)||(gp?.buttons[14]?.pressed),
-    right:keys['KeyD']||(gp?.axes[0]>0.35)||(gp?.buttons[15]?.pressed),
-    jump:keys['KeyW']||(gp?.buttons[0]?.pressed)||(gp?.buttons[12]?.pressed),
+    left:keys['KeyA']||(gp&&gp.axes&&gp.axes[0]<-0.35)||(gp&&gp.buttons&&gp.buttons[14]&&gp.buttons[14].pressed),
+    right:keys['KeyD']||(gp&&gp.axes&&gp.axes[0]>0.35)||(gp&&gp.buttons&&gp.buttons[15]&&gp.buttons[15].pressed),
+    crouch:!!(keys['KeyS']||(gp&&gp.axes&&gp.axes[1]>0.55)||(gp&&gp.buttons&&gp.buttons[13]&&gp.buttons[13].pressed)),
+    jump:keys['KeyW']||(gp&&gp.buttons&&gp.buttons[0]&&gp.buttons[0].pressed)||(gp&&gp.buttons&&gp.buttons[12]&&gp.buttons[12].pressed),
     punch:keys['Space']||(gp?.buttons[2]?.pressed),
     kick:keys['KeyV']||(gp?.buttons[3]?.pressed),
     block:keys['KeyQ']||(gp?.buttons[1]?.pressed),
@@ -5274,9 +5301,10 @@ function getInput(pid){
     hook:keys['KeyH']||keys['KeyY']
   };
   return{
-    left:keys['ArrowLeft']||(gp?.axes[0]<-0.35)||(gp?.buttons[14]?.pressed),
-    right:keys['ArrowRight']||(gp?.axes[0]>0.35)||(gp?.buttons[15]?.pressed),
-    jump:keys['ArrowUp']||(gp?.buttons[0]?.pressed)||(gp?.buttons[12]?.pressed),
+    left:keys['ArrowLeft']||(gp&&gp.axes&&gp.axes[0]<-0.35)||(gp&&gp.buttons&&gp.buttons[14]&&gp.buttons[14].pressed),
+    right:keys['ArrowRight']||(gp&&gp.axes&&gp.axes[0]>0.35)||(gp&&gp.buttons&&gp.buttons[15]&&gp.buttons[15].pressed),
+    crouch:!!(keys['ArrowDown']||(gp&&gp.axes&&gp.axes[1]>0.55)||(gp&&gp.buttons&&gp.buttons[13]&&gp.buttons[13].pressed)),
+    jump:keys['ArrowUp']||(gp&&gp.buttons&&gp.buttons[0]&&gp.buttons[0].pressed)||(gp&&gp.buttons&&gp.buttons[12]&&gp.buttons[12].pressed),
     punch:keys['KeyL']||(gp?.buttons[2]?.pressed),
     kick:keys['Period']||(gp?.buttons[3]?.pressed),
     block:keys['KeyP']||(gp?.buttons[1]?.pressed),
