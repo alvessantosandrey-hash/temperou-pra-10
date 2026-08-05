@@ -278,37 +278,42 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
 #fatality-overlay{position:absolute;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.0);pointer-events:none;}
 #fatality-overlay.active{display:flex;pointer-events:all;}
 /* Sangue escorrendo */
-#blood-overlay{position:absolute;inset:0;pointer-events:none;z-index:55;opacity:0;transition:opacity 0.3s;}
+#blood-overlay{position:absolute;inset:0;pointer-events:none;z-index:55;opacity:0;display:none !important;}
 #blood-canvas{position:absolute;inset:0;width:100%;height:100%;}
-/* Texto FATALITY */
-#fatality-text-wrap{position:absolute;top:18%;width:100%;text-align:center;opacity:0;transform:scale(3) rotateX(45deg);transition:all 0.6s cubic-bezier(0.175,0.885,0.32,1.275);}
+/* Texto FATALITY / BRUTALITY */
+#fatality-text-wrap{position:absolute;top:16%;width:100%;text-align:center;opacity:0;transform:scale(4) rotateX(50deg);transition:all 0.7s cubic-bezier(0.175,0.885,0.32,1.275);z-index:65;}
 #fatality-text-wrap.show{opacity:1;transform:scale(1) rotateX(0);}
-#fatality-word{font-family:'Bebas Neue',sans-serif;font-size:clamp(80px,14vw,160px);letter-spacing:16px;color:#ff0000;text-shadow:0 0 60px #ff0000,0 0 120px #880000,4px 4px 0 #000,8px 8px 0 rgba(0,0,0,0.5);animation:fatalityPulse 0.4s ease-in-out infinite alternate;}
-@keyframes fatalityPulse{from{text-shadow:0 0 40px #ff0000,0 0 80px #880000,4px 4px 0 #000}to{text-shadow:0 0 80px #ff2200,0 0 160px #aa0000,0 0 200px #660000,4px 4px 0 #000}}
-#fatality-winner-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(20px,3.5vw,42px);letter-spacing:8px;color:#fff;opacity:0.7;margin-top:6px;}
+#fatality-word{font-family:'Bebas Neue',sans-serif;font-size:clamp(90px,16vw,180px);letter-spacing:18px;color:#ff0000;text-shadow:0 0 60px #ff0000,0 0 120px #880000,4px 4px 0 #000,8px 8px 0 rgba(0,0,0,0.5);animation:fatalityPulse 0.35s ease-in-out infinite alternate;}
+#fatality-word.brutality{color:#ffd600;text-shadow:0 0 60px #ffd600,0 0 120px #ff6600,4px 4px 0 #000,8px 8px 0 rgba(0,0,0,0.5);animation:brutalityPulse 0.3s ease-in-out infinite alternate;}
+@keyframes fatalityPulse{from{text-shadow:0 0 40px #ff0000,0 0 80px #880000,4px 4px 0 #000}to{text-shadow:0 0 90px #ff2200,0 0 180px #aa0000,0 0 220px #660000,4px 4px 0 #000}}
+@keyframes brutalityPulse{from{text-shadow:0 0 40px #ffd600,0 0 80px #ff6600,4px 4px 0 #000}to{text-shadow:0 0 90px #fff,0 0 180px #ffd600,0 0 220px #ff4400,4px 4px 0 #000}}
+#fatality-winner-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(22px,3.8vw,48px);letter-spacing:8px;color:#ffcc00;opacity:0.85;margin-top:8px;text-shadow:0 0 20px currentColor,2px 2px 0 #000;}
 /* Input display para FATALITY */
-#fatality-input-ui{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:10px;z-index:62;}
+#fatality-input-ui{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:12px;z-index:62;background:rgba(0,0,0,0.55);padding:16px 28px;border-radius:10px;border:1px solid rgba(255,50,50,0.25);backdrop-filter:blur(8px);}
 #fatality-input-ui.visible{display:flex;}
-#fatality-prompt{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:4px;color:#ff4444;animation:promptBlink 0.8s ease-in-out infinite alternate;}
-@keyframes promptBlink{from{opacity:0.5;text-shadow:0 0 8px #ff0000}to{opacity:1;text-shadow:0 0 20px #ff2200,0 0 40px #ff0000}}
-#fatality-keys{display:flex;gap:8px;align-items:center;}
-.fk{width:36px;height:36px;border:2px solid rgba(255,68,68,0.3);border-radius:6px;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;color:rgba(255,68,68,0.35);transition:all 0.15s;letter-spacing:1px;}
-.fk.done{border-color:#ff0000;color:#ff4444;background:rgba(255,0,0,0.15);box-shadow:0 0 12px rgba(255,0,0,0.4);}
-.fk.active{border-color:#ff4444;color:#ff4444;background:rgba(255,0,0,0.08);animation:keyPulse 0.3s ease-in-out infinite alternate;}
-@keyframes keyPulse{from{box-shadow:0 0 6px rgba(255,0,0,0.3)}to{box-shadow:0 0 18px rgba(255,0,0,0.7)}}
-#fatality-timer-bar{width:300px;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;}
-#fatality-timer-fill{height:100%;background:linear-gradient(90deg,#ff0000,#ff6600);border-radius:2px;width:100%;transition:width 0.1s linear;}
-#fatality-winner-prompt{font-size:11px;letter-spacing:3px;color:rgba(255,100,100,0.5);text-align:center;}
+#fatality-prompt{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:5px;color:#ff3333;animation:promptBlink 0.7s ease-in-out infinite alternate;}
+@keyframes promptBlink{from{opacity:0.55;text-shadow:0 0 8px #ff0000}to{opacity:1;text-shadow:0 0 24px #ff2200,0 0 48px #ff0000}}
+#fatality-keys{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;}
+.fk{min-width:40px;height:40px;padding:0 6px;border:2px solid rgba(255,68,68,0.35);border-radius:6px;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:15px;color:rgba(255,68,68,0.4);transition:all 0.15s;letter-spacing:1px;}
+.fk.done{border-color:#ff0000;color:#ff4444;background:rgba(255,0,0,0.2);box-shadow:0 0 14px rgba(255,0,0,0.5);transform:scale(1.08);}
+.fk.active{border-color:#ff4444;color:#fff;background:rgba(255,0,0,0.15);animation:keyPulse 0.28s ease-in-out infinite alternate;}
+@keyframes keyPulse{from{box-shadow:0 0 6px rgba(255,0,0,0.3)}to{box-shadow:0 0 20px rgba(255,0,0,0.8)}}
+#fatality-timer-bar{width:320px;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;border:1px solid rgba(255,50,50,0.2);}
+#fatality-timer-fill{height:100%;background:linear-gradient(90deg,#ff0000,#ff6600,#ffd600);border-radius:2px;width:100%;transition:width 0.1s linear;box-shadow:0 0 8px #ff0000;}
+#fatality-winner-prompt{font-size:12px;letter-spacing:3px;color:rgba(255,180,80,0.7);text-align:center;font-family:'Bebas Neue',sans-serif;}
 /* Tela de quem pode fazer fatality */
-#fatality-announce{position:absolute;top:28%;width:100%;text-align:center;pointer-events:none;z-index:61;display:none;}
+#fatality-announce{position:absolute;top:26%;width:100%;text-align:center;pointer-events:none;z-index:61;display:none;}
 #fatality-announce.show{display:block;}
-#fa-text{font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,5vw,56px);letter-spacing:6px;color:#ff4444;text-shadow:0 0 30px #ff0000;animation:msgPop 0.4s cubic-bezier(0.175,0.885,0.32,1.275) both;}
-#fa-sub{font-size:11px;letter-spacing:4px;color:rgba(255,68,68,0.5);margin-top:6px;}
+#fa-text{font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,7vw,72px);letter-spacing:8px;color:#ff2222;text-shadow:0 0 40px #ff0000,0 0 80px #880000,3px 3px 0 #000;animation:msgPop 0.45s cubic-bezier(0.175,0.885,0.32,1.275) both;}
+#fa-sub{font-size:13px;letter-spacing:5px;color:rgba(255,100,100,0.6);margin-top:10px;text-transform:uppercase;}
 /* Cena do fatality - animação 3D */
 #fatality-scene{position:absolute;inset:0;pointer-events:none;z-index:58;display:none;}
 #fatality-scene.active{display:block;}
 /* Partículas de sangue via canvas */
-#fatality-blood-particles{position:absolute;inset:0;pointer-events:none;z-index:59;}
+#fatality-blood-particles{position:absolute;inset:0;pointer-events:none;z-index:59;display:none !important;}
+/* Vinheta de sangue durante fatality */
+#fatality-vignette{position:absolute;inset:0;pointer-events:none;z-index:57;opacity:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(80,0,0,0.55) 100%);transition:opacity 0.8s;}
+#fatality-vignette.active{opacity:1;}
 
 /* ═══ MAP SELECT ═══ */
 #map-screen{position:fixed;inset:0;z-index:110;background:#050508;display:none;flex-direction:column;overflow:hidden;}
@@ -362,7 +367,7 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
             <div class="preview-desc">Clique ou use o controle 1</div>
           </div>
         </div>
-        <div class="panel-hint">🎮1 · WASD SPACE V Q E R T</div>
+        <div class="panel-hint">🎮1 · WASD SPACE V Q E R T H</div>
       </div>
       <div class="grid-wrap">
         <div class="char-grid" id="char-grid"></div>
@@ -383,7 +388,7 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
             <div class="preview-desc">Clique direito ou controle 2</div>
           </div>
         </div>
-        <div class="panel-hint">🎮2 · ↑←→ L . P O I ;</div>
+        <div class="panel-hint">🎮2 · ↑←→ L . P O I ; N</div>
       </div>
     </div>
   </div>
@@ -466,10 +471,11 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
   <div id="fatality-input-ui">
     <div id="fatality-winner-prompt"></div>
     <div id="fatality-prompt">☠ INSIRA O CÓDIGO FATALITY ☠</div>
-    <div id="fatality-gp-hint" style="font-size:9px;letter-spacing:2px;color:rgba(255,100,100,0.45);margin-top:4px">🎮 D-PAD / STICK = direções · A X Y B = botão final</div>
+    <div id="fatality-gp-hint" style="font-size:9px;letter-spacing:2px;color:rgba(255,100,100,0.45);margin-top:4px">🎮 D-PAD/STICK = direções · A/X/Y/B = botão final · P1: WASD+F · P2: Setas+K</div>
     <div id="fatality-keys"></div>
     <div id="fatality-timer-bar"><div id="fatality-timer-fill"></div></div>
   </div>
+  <div id="fatality-vignette"></div>
   <div id="fatality-overlay">
     <div id="fatality-text-wrap">
       <div id="fatality-word">FATALITY</div>
@@ -543,14 +549,14 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
       <span class="ctrl-key">W</span> Pular &nbsp;<span class="ctrl-key">A</span><span class="ctrl-key">D</span> Mover &nbsp;<span class="ctrl-key">A+A</span> Dash<br>
       <span class="ctrl-key">SPACE</span> Soco &nbsp;<span class="ctrl-key">V</span> Chute &nbsp;<span class="ctrl-key">Q</span> Defesa<br>
       <span class="ctrl-key">F</span> Cotovelo &nbsp;<span class="ctrl-key">C</span> Uppercut &nbsp;<span class="ctrl-key">G</span> Soco Pesado<br>
-      <span class="ctrl-key">B</span> Rasteira &nbsp;<span class="ctrl-key">E</span> Especial &nbsp;<span class="ctrl-key">R</span> SUPER &nbsp;<span class="ctrl-key">T</span> Teleporte<br>
+      <span class="ctrl-key">B</span> Rasteira &nbsp;<span class="ctrl-key">E</span> Especial &nbsp;<span class="ctrl-key">R</span> SUPER &nbsp;<span class="ctrl-key">T</span> Teleporte &nbsp;<span class="ctrl-key">H</span> Gancho (2x)<br>
       <span style="color:rgba(0,229,255,0.7)">🎮 USB: A=Pular X=Soco(segurar=combo) Y=Chute(segurar=combo) B=Defesa L1=Esp R1=Super L2=Pesado R2=Rasteira Select=Cotovelo Start=Uppercut L3=Teleporte</span>
     </div>
     <div class="ctrl-box" style="text-align:right">
       <span class="ctrl-key">↑</span> Pular &nbsp;<span class="ctrl-key">←</span><span class="ctrl-key">→</span> Mover &nbsp;<span class="ctrl-key">←+←</span> Dash<br>
       <span class="ctrl-key">L</span> Soco &nbsp;<span class="ctrl-key">.</span> Chute &nbsp;<span class="ctrl-key">P</span> Defesa<br>
       <span class="ctrl-key">K</span> Cotovelo &nbsp;<span class="ctrl-key">U</span> Uppercut &nbsp;<span class="ctrl-key">J</span> Soco Pesado<br>
-      <span class="ctrl-key">M</span> Rasteira &nbsp;<span class="ctrl-key">O</span> Especial &nbsp;<span class="ctrl-key">I</span> SUPER &nbsp;<span class="ctrl-key">;</span> Teleporte<br>
+      <span class="ctrl-key">M</span> Rasteira &nbsp;<span class="ctrl-key">O</span> Especial &nbsp;<span class="ctrl-key">I</span> SUPER &nbsp;<span class="ctrl-key">;</span> Teleporte &nbsp;<span class="ctrl-key">N</span> Gancho (2x)<br>
       <span style="color:rgba(255,102,0,0.7)">🎮 P2: mesmo mapeamento no 2º controle · L3=Teleporte</span>
     </div>
   </div>
@@ -1067,14 +1073,17 @@ let fatalityState = {
   loser: null,
   sequence: [],
   progress: 0,
-  timeLeft: 6,
+  timeLeft: 8,
   timerInterval: null,
   executed: false,
   available: false,
   wasLastRound: false,
+  isBrutality: false,
+  finishCombo: 0,
 };
 // Partículas de sangue
 let bloodParticles = [];
+let bloodStains = []; // poças permanentes no chão
 let bloodAnimFrame = null;
 const bloodCanvas = document.getElementById('fatality-blood-particles');
 const bloodCtx = bloodCanvas.getContext('2d');
@@ -1084,141 +1093,234 @@ function resizeBloodCanvas(){
 }
 resizeBloodCanvas();
 window.addEventListener('resize', resizeBloodCanvas);
-function spawnBloodParticles(x, y, count, color='#cc0000', style='spray'){
+
+function spawnBloodParticles(x, y, count, color='#cc0000', style='spray'){ return;
   for(let i=0;i<count;i++){
     const angle = Math.random()*Math.PI*2;
     let speed, r, decay, gravity, vy0, type = style;
     if(style==='spray' || style==='default'){
-      speed = 4 + Math.random()*16;
-      r = 2 + Math.random()*7;
-      decay = 0.01 + Math.random()*0.02;
-      gravity = 0.45 + Math.random()*0.35;
-      vy0 = Math.sin(angle)*speed - 8 - Math.random()*10;
+      speed = 5 + Math.random()*18;
+      r = 2.5 + Math.random()*8;
+      decay = 0.008 + Math.random()*0.016;
+      gravity = 0.5 + Math.random()*0.4;
+      vy0 = Math.sin(angle)*speed - 10 - Math.random()*12;
     } else if(style==='mist'){
-      speed = 1 + Math.random()*4;
-      r = 8 + Math.random()*18;
-      decay = 0.008 + Math.random()*0.012;
-      gravity = 0.05 + Math.random()*0.08;
-      vy0 = Math.sin(angle)*speed - 1;
+      speed = 1.5 + Math.random()*5;
+      r = 10 + Math.random()*22;
+      decay = 0.006 + Math.random()*0.01;
+      gravity = 0.04 + Math.random()*0.06;
+      vy0 = Math.sin(angle)*speed - 1.5;
       type = 'mist';
     } else if(style==='chunk'){
-      speed = 5 + Math.random()*14;
-      r = 6 + Math.random()*12;
-      decay = 0.006 + Math.random()*0.01;
-      gravity = 0.55 + Math.random()*0.3;
-      vy0 = Math.sin(angle)*speed - 10 - Math.random()*8;
+      speed = 6 + Math.random()*16;
+      r = 7 + Math.random()*14;
+      decay = 0.005 + Math.random()*0.009;
+      gravity = 0.6 + Math.random()*0.35;
+      vy0 = Math.sin(angle)*speed - 12 - Math.random()*10;
       type = 'chunk';
     } else if(style==='arterial'){
-      speed = 10 + Math.random()*18;
-      r = 2 + Math.random()*5;
-      decay = 0.014 + Math.random()*0.02;
-      gravity = 0.35 + Math.random()*0.25;
       const dir = (Math.random()>0.5?1:-1);
-      vy0 = -12 - Math.random()*10;
       bloodParticles.push({
         x, y,
-        vx: dir * (8 + Math.random()*14),
-        vy: vy0,
-        r, life: 1, decay, color, gravity,
+        vx: dir * (10 + Math.random()*18),
+        vy: -14 - Math.random()*12,
+        r: 2.5 + Math.random()*6,
+        life: 1, decay: 0.01 + Math.random()*0.018,
+        color, gravity: 0.38 + Math.random()*0.28,
         type: 'arterial', trail: true
       });
       continue;
     } else if(style==='pool'){
-      speed = 0.5 + Math.random()*2;
-      r = 10 + Math.random()*22;
-      decay = 0.003 + Math.random()*0.005;
-      gravity = 0.02;
-      vy0 = 1 + Math.random()*2;
+      speed = 0.4 + Math.random()*2;
+      r = 12 + Math.random()*28;
+      decay = 0.002 + Math.random()*0.004;
+      gravity = 0.015;
+      vy0 = 0.5 + Math.random()*1.5;
       type = 'pool';
+    } else if(style==='drip'){
+      bloodParticles.push({
+        x: x + (Math.random()-0.5)*20,
+        y: y,
+        vx: (Math.random()-0.5)*1.5,
+        vy: 2 + Math.random()*4,
+        r: 2 + Math.random()*4,
+        life: 1, decay: 0.004 + Math.random()*0.006,
+        color, gravity: 0.35,
+        type: 'drip'
+      });
+      continue;
     } else {
-      speed = 4 + Math.random()*12;
-      r = 3 + Math.random()*6;
-      decay = 0.012 + Math.random()*0.018;
-      gravity = 0.4 + Math.random()*0.3;
-      vy0 = Math.sin(angle)*speed - 6 - Math.random()*8;
+      speed = 5 + Math.random()*14;
+      r = 3 + Math.random()*7;
+      decay = 0.01 + Math.random()*0.016;
+      gravity = 0.45 + Math.random()*0.3;
+      vy0 = Math.sin(angle)*speed - 7 - Math.random()*9;
     }
     bloodParticles.push({
       x, y,
-      vx: Math.cos(angle)*speed,
+      vx: Math.cos(angle)*speed * (style==='spray'?1.1:1),
       vy: vy0,
-      r, life: 1, decay, color, gravity, type
+      r, life: 1, decay, color, gravity, type,
+      rot: Math.random()*Math.PI*2,
+      rotV: (Math.random()-0.5)*0.3
     });
   }
-}
-function spawnBloodDrip(x, y, color='#aa0000'){
-  for(let i=0;i<14;i++){
-    bloodParticles.push({
-      x: x + (Math.random()-0.5)*280,
-      y: y + Math.random()*60,
-      vx: (Math.random()-0.5)*1.5,
-      vy: 5 + Math.random()*8,
-      r: 5 + Math.random()*12,
-      life: 1,
-      decay: 0.003 + Math.random()*0.005,
-      color,
-      gravity: 0.12,
-      type: 'drip',
-      drip: true,
-    });
+  // Mancha no chão ocasional
+  if((style==='spray'||style==='chunk') && count>=8 && Math.random()<0.45){
+    addBloodStain(x + (Math.random()-0.5)*30, Math.min(y+40, innerHeight-20), 15+Math.random()*25, color);
   }
 }
-function spawnGoreExplosion(x, y, intensity=1){
-  const n = Math.floor(28 * intensity);
-  const colors = ['#8b0000','#cc0000','#aa0000','#660000','#ff2222','#4a0000','#990000'];
-  spawnBloodParticles(x, y, n, colors[0], 'spray');
-  spawnBloodParticles(x, y, Math.floor(n*0.5), colors[1], 'chunk');
-  spawnBloodParticles(x, y, Math.floor(n*0.35), colors[2], 'mist');
-  spawnBloodParticles(x, y, Math.floor(n*0.25), colors[4], 'arterial');
-  for(let i=0;i<6;i++){
-    spawnBloodParticles(x+(Math.random()-0.5)*40, y+(Math.random()-0.5)*30, 8, colors[i%colors.length], 'spray');
-  }
+
+function addBloodStain(x, y, size, color){ return;
+  bloodStains.push({
+    x, y,
+    r: size,
+    color: color || '#5a0000',
+    alpha: 0.55 + Math.random()*0.35,
+    life: 1,
+    grow: 1.002 + Math.random()*0.003
+  });
+  // Limita manchas para performance
+  if(bloodStains.length > 80) bloodStains.shift();
 }
-function spawnArterialSpray(x, y, dir=1, color='#cc0000'){
-  for(let i=0;i<20;i++){
+
+function spawnBloodDrip(x, y, color='#aa0000'){ return;
+  for(let i=0;i<16;i++){
     bloodParticles.push({
-      x: x + (Math.random()-0.5)*10,
-      y: y + (Math.random()-0.5)*10,
-      vx: dir * (12 + Math.random()*20) + (Math.random()-0.5)*4,
-      vy: -8 - Math.random()*14 + (Math.random()-0.5)*6,
+      x: x + (Math.random()-0.5)*30,
+      y: y - Math.random()*10,
+      vx: (Math.random()-0.5)*2,
+      vy: 3 + Math.random()*6,
       r: 2 + Math.random()*5,
       life: 1,
-      decay: 0.012 + Math.random()*0.018,
+      decay: 0.003 + Math.random()*0.006,
       color,
-      gravity: 0.4 + Math.random()*0.3,
-      type: 'arterial'
+      gravity: 0.4 + Math.random()*0.2,
+      type: 'drip'
     });
   }
 }
+
+function spawnGoreExplosion(x, y, intensity=1){ return;
+  const n = Math.floor(18 * intensity);
+  const colors = ['#cc0000','#8b0000','#aa0000','#ff2222','#660000'];
+  spawnBloodParticles(x, y, n, '#cc0000', 'spray');
+  spawnBloodParticles(x, y, Math.floor(n*0.6), '#8b0000', 'chunk');
+  spawnBloodParticles(x, y, Math.floor(n*0.4), '#aa0000', 'mist');
+  spawnArterialSpray(x, y, 1, '#cc0000');
+  spawnArterialSpray(x, y, -1, '#8b0000');
+  for(let i=0;i<5;i++){
+    spawnBloodParticles(x+(Math.random()-0.5)*50, y+(Math.random()-0.5)*40, 10, colors[i%colors.length], 'spray');
+  }
+  addBloodStain(x, Math.min(y+50, innerHeight-15), 30+intensity*20, '#4a0000');
+}
+
+function spawnArterialSpray(x, y, dir=1, color='#cc0000'){ return;
+  for(let i=0;i<24;i++){
+    bloodParticles.push({
+      x: x + (Math.random()-0.5)*12,
+      y: y + (Math.random()-0.5)*12,
+      vx: dir * (14 + Math.random()*22) + (Math.random()-0.5)*5,
+      vy: -10 - Math.random()*16 + (Math.random()-0.5)*7,
+      r: 2.5 + Math.random()*6,
+      life: 1,
+      decay: 0.01 + Math.random()*0.016,
+      color,
+      gravity: 0.42 + Math.random()*0.3,
+      type: 'arterial',
+      trail: true
+    });
+  }
+}
+
+// Burst de sangue a partir de coordenadas 3D do lutador
+function bloodBurst3D(fighter, yOff, count, color){ return;
+  if(!fighter || !camera) return;
+  try{
+    const w = new THREE.Vector3(fighter.pos.x, fighter.pos.y + (yOff||1.0), fighter.pos.z);
+    const v = w.project(camera);
+    const sx = (v.x*0.5+0.5)*innerWidth;
+    const sy = (-v.y*0.5+0.5)*innerHeight;
+    if(v.z > 1) return;
+    spawnBloodParticles(sx, sy, count||14, color||'#bb0000', 'spray');
+    if(count >= 16) spawnBloodParticles(sx, sy, 6, '#660000', 'mist');
+    if(count >= 24){
+      spawnArterialSpray(sx, sy, fighter.facing||1, '#cc0000');
+      spawnBloodParticles(sx, sy, 8, '#8b0000', 'chunk');
+    }
+    startBloodAnimation();
+  }catch(e){}
+}
+
 function animateBlood(){
-  bloodCtx.clearRect(0,0,bloodCanvas.width,bloodCanvas.height);
+  if(!bloodCtx || !bloodCanvas) return;
+  bloodCtx.clearRect(0, 0, bloodCanvas.width, bloodCanvas.height);
+
+  // ── Manchas permanentes no chão ──
+  for(let i=bloodStains.length-1;i>=0;i--){
+    const s = bloodStains[i];
+    s.r *= s.grow;
+    s.life -= 0.00015;
+    if(s.life <= 0.05){ bloodStains.splice(i,1); continue; }
+    bloodCtx.save();
+    bloodCtx.globalAlpha = s.alpha * Math.min(1, s.life*1.2);
+    bloodCtx.fillStyle = s.color;
+    bloodCtx.beginPath();
+    bloodCtx.ellipse(s.x, s.y, s.r, s.r*0.38, 0, 0, Math.PI*2);
+    bloodCtx.fill();
+    // centro mais escuro
+    bloodCtx.globalAlpha *= 0.5;
+    bloodCtx.fillStyle = '#2a0000';
+    bloodCtx.beginPath();
+    bloodCtx.ellipse(s.x, s.y, s.r*0.45, s.r*0.18, 0, 0, Math.PI*2);
+    bloodCtx.fill();
+    bloodCtx.restore();
+  }
+
+  // ── Partículas ativas ──
   for(let i=bloodParticles.length-1;i>=0;i--){
-    const p=bloodParticles[i];
+    const p = bloodParticles[i];
     p.vy += p.gravity;
     p.x += p.vx;
     p.y += p.vy;
     p.life -= p.decay;
-    if(p.type==='arterial'){ p.vx *= 0.98; }
-    if(p.type==='mist'){ p.r *= 1.01; p.vx *= 0.97; }
-    if(p.type==='pool'){ p.r *= 1.008; p.vx *= 0.9; }
-    if(p.life<=0 || p.y>bloodCanvas.height+80 || p.x<-50 || p.x>bloodCanvas.width+50){
+    if(p.rot !== undefined) p.rot += (p.rotV||0);
+    if(p.type==='arterial'){ p.vx *= 0.975; }
+    if(p.type==='mist'){ p.r *= 1.012; p.vx *= 0.96; }
+    if(p.type==='pool'){ p.r *= 1.01; p.vx *= 0.88; }
+    if(p.type==='drip'){ p.vx *= 0.99; }
+
+    // Ao tocar o "chão" da tela, vira mancha
+    if(p.y > bloodCanvas.height - 30 && p.vy > 0 && (p.type==='spray'||p.type==='chunk'||p.type==='arterial'||p.type==='drip')){
+      if(Math.random() < 0.35){
+        addBloodStain(p.x, bloodCanvas.height - 18 - Math.random()*12, p.r*2.5 + 8, p.color);
+      }
+      p.life = 0;
+    }
+
+    if(p.life<=0 || p.y>bloodCanvas.height+100 || p.x<-80 || p.x>bloodCanvas.width+80){
       bloodParticles.splice(i,1); continue;
     }
+
     bloodCtx.save();
-    bloodCtx.globalAlpha = Math.max(0, p.life * (p.type==='mist'?0.35:p.type==='pool'?0.5:0.95));
+    const alphaMul = p.type==='mist' ? 0.3 : p.type==='pool' ? 0.55 : 0.92;
+    bloodCtx.globalAlpha = Math.max(0, p.life * alphaMul);
     bloodCtx.fillStyle = p.color;
-    if(p.drip || p.type==='drip'){
+
+    if(p.type==='drip'){
       bloodCtx.beginPath();
-      bloodCtx.ellipse(p.x, p.y, p.r*0.45, p.r*1.6, 0, 0, Math.PI*2);
+      bloodCtx.ellipse(p.x, p.y, p.r*0.4, p.r*1.8, 0, 0, Math.PI*2);
       bloodCtx.fill();
     } else if(p.type==='chunk'){
+      bloodCtx.translate(p.x, p.y);
+      bloodCtx.rotate(p.rot||0);
       bloodCtx.beginPath();
-      bloodCtx.ellipse(p.x, p.y, p.r*0.8, p.r*0.55, p.vx*0.1, 0, Math.PI*2);
+      bloodCtx.ellipse(0, 0, p.r*0.85, p.r*0.55, 0, 0, Math.PI*2);
       bloodCtx.fill();
-      // darker core
-      bloodCtx.globalAlpha *= 0.6;
-      bloodCtx.fillStyle = '#4a0000';
+      bloodCtx.globalAlpha *= 0.55;
+      bloodCtx.fillStyle = '#3a0000';
       bloodCtx.beginPath();
-      bloodCtx.ellipse(p.x, p.y, p.r*0.4, p.r*0.3, 0, 0, Math.PI*2);
+      bloodCtx.ellipse(0, 0, p.r*0.4, p.r*0.28, 0, 0, Math.PI*2);
       bloodCtx.fill();
     } else if(p.type==='mist'){
       bloodCtx.beginPath();
@@ -1226,30 +1328,45 @@ function animateBlood(){
       bloodCtx.fill();
     } else if(p.type==='pool'){
       bloodCtx.beginPath();
-      bloodCtx.ellipse(p.x, p.y, p.r, p.r*0.35, 0, 0, Math.PI*2);
+      bloodCtx.ellipse(p.x, p.y, p.r, p.r*0.32, 0, 0, Math.PI*2);
       bloodCtx.fill();
     } else {
+      // spray / arterial — gota com rastro
       bloodCtx.beginPath();
       bloodCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
       bloodCtx.fill();
-      // small highlight trail for spray
       if(p.type==='arterial' || p.type==='spray'){
-        bloodCtx.globalAlpha *= 0.4;
+        bloodCtx.globalAlpha *= 0.45;
         bloodCtx.beginPath();
-        bloodCtx.arc(p.x - p.vx*0.3, p.y - p.vy*0.3, p.r*0.5, 0, Math.PI*2);
+        bloodCtx.arc(p.x - p.vx*0.4, p.y - p.vy*0.4, p.r*0.55, 0, Math.PI*2);
+        bloodCtx.fill();
+        bloodCtx.globalAlpha *= 0.5;
+        bloodCtx.beginPath();
+        bloodCtx.arc(p.x - p.vx*0.8, p.y - p.vy*0.8, p.r*0.3, 0, Math.PI*2);
         bloodCtx.fill();
       }
     }
     bloodCtx.restore();
   }
-  if(bloodParticles.length>0 || fatalityState.executed){
+
+  if(bloodParticles.length>0 || bloodStains.length>0 || (typeof fatalityState!=='undefined' && fatalityState.executed)){
     bloodAnimFrame = requestAnimationFrame(animateBlood);
+  } else {
+    bloodAnimFrame = null;
   }
 }
-function startBloodAnimation(){
-  if(bloodAnimFrame) cancelAnimationFrame(bloodAnimFrame);
+
+function startBloodAnimation(){ bloodParticles=[]; bloodStains=[]; if(bloodCtx&&bloodCanvas)bloodCtx.clearRect(0,0,bloodCanvas.width,bloodCanvas.height); return;
+  if(bloodAnimFrame) return; // já está rodando
   animateBlood();
 }
+
+function clearBlood(){
+  bloodParticles = [];
+  bloodStains = [];
+  if(bloodCtx && bloodCanvas) bloodCtx.clearRect(0,0,bloodCanvas.width,bloodCanvas.height);
+}
+
 function buildFatalityInputUI(playerWinner) {
   const winCh = playerWinner === 1 ? (p1?p1.ch:null) : (p2?p2.ch:null);
   const seq = winCh ? getFatalitySequence(playerWinner, winCh) : ['up','down','left','right', playerWinner===1?'F':'K'];
@@ -1290,8 +1407,10 @@ function showFatalityPrompt(winner) {
   fatalityState.winner = winner;
   fatalityState.loser = winner === 1 ? 2 : 1;
   fatalityState.progress = 0;
-  fatalityState.timeLeft = 6;
+  fatalityState.timeLeft = 8;
   fatalityState.executed = false;
+  // No final da luta SEMPRE é FATALITY (código). Brutality é só mid-fight.
+  fatalityState.isBrutality = false;
   // Reset edge-detect do gamepad para o código Fatality
   if(typeof fatalityGp !== 'undefined'){
     fatalityGp.lastDir = [null, null];
@@ -1302,9 +1421,16 @@ function showFatalityPrompt(winner) {
   fatalityState.sequence = winCh ? getFatalitySequence(winner, winCh) : ['up','down','left','right', winner===1?'F':'K'];
   const faText = document.getElementById('fa-text');
   const loserName = winner===1 ? (p2?p2.ch.name:'P2') : (p1?p1.ch.name:'P1');
-  faText.textContent = `FINISH ${loserName}!`;
+  // Clássico Mortal Kombat: FINISH HIM! / FINISH HER!
+  const finishWord = (Math.random()<0.5) ? 'HIM' : 'HIM'; // maioria neutro → HIM
+  faText.textContent = `FINISH ${finishWord}!`;
+  faText.style.color = '#ff2222';
+  faText.style.textShadow = '0 0 40px #ff0000, 0 0 80px #aa0000, 4px 4px 0 #000';
   const faSub = document.getElementById('fa-sub');
-  if(faSub && winCh) faSub.textContent = winCh.fatalityEmoji + ' ' + winCh.fatalityName + ' ' + winCh.fatalityEmoji;
+  if(faSub && winCh){
+    faSub.textContent = winCh.fatalityEmoji + ' ' + winCh.fatalityName + ' ' + winCh.fatalityEmoji;
+    faSub.style.color = '';
+  }
   const faEl = document.getElementById('fatality-announce');
   faEl.classList.add('show');
   setTimeout(()=>faEl.classList.remove('show'), 2400);
@@ -1314,12 +1440,12 @@ function showFatalityPrompt(winner) {
     const ui = document.getElementById('fatality-input-ui');
     ui.classList.add('visible');
     updateFatalityKeyUI(0);
-    let t = 6;
+    let t = 8;
     const fill = document.getElementById('fatality-timer-fill');
     fatalityState.timerInterval = setInterval(()=>{
       t -= 0.1;
       fatalityState.timeLeft = t;
-      if(fill) fill.style.width = Math.max(0,(t/6)*100)+'%';
+      if(fill) fill.style.width = Math.max(0,(t/8)*100)+'%';
       if(t <= 0){
         clearInterval(fatalityState.timerInterval);
         cancelFatality();
@@ -1361,8 +1487,9 @@ function executeFatality() {
   loseF.vel.set(0,0,0);
   loseF.isGrounded = true;
   loseF.pos.y = FLOOR_Y;
-  loseF.root.rotation.z = 1.2;
-  loseF.root.position.y = 0.35;
+  loseF.root.rotation.z = 0;
+  loseF.root.rotation.x = -0.1;
+  loseF.root.position.y = (typeof FIGHTER_GROUND_Y!=='undefined'?FIGHTER_GROUND_Y:1.1)-0.1;
   winF.vel.set(0,0,0);
   loseF.vel.set(0,0,0);
 
@@ -1422,53 +1549,79 @@ function executeFatality() {
     const overlay = document.getElementById('fatality-overlay');
     const textWrap = document.getElementById('fatality-text-wrap');
     const winnerNameEl = document.getElementById('fatality-winner-name');
+    const wordEl = document.getElementById('fatality-word');
+    const vignette = document.getElementById('fatality-vignette');
     overlay.classList.add('active');
-    // Clássico MK: FATALITY sempre vermelho sangue
-    document.getElementById('fatality-word').style.color = '#ff0000';
-    document.getElementById('fatality-word').textContent = 'FATALITY';
-    winnerNameEl.textContent = winCh.fatalityEmoji + '  ' + winCh.fatalityName + '  ' + winCh.fatalityEmoji;
-    winnerNameEl.style.color = '#ffcc00';
+    if(vignette) vignette.classList.add('active');
+
+    const isBrut = fatalityState.isBrutality;
+    wordEl.textContent = isBrut ? 'BRUTALITY' : 'FATALITY';
+    wordEl.classList.toggle('brutality', isBrut);
+    wordEl.style.color = isBrut ? '#ffd600' : '#ff0000';
+
+    winnerNameEl.textContent = (winCh.fatalityEmoji||'💀') + '  ' + (winCh.fatalityName||'') + '  ' + (winCh.fatalityEmoji||'💀');
+    winnerNameEl.style.color = isBrut ? '#ffd600' : '#ffcc00';
     winnerNameEl.style.letterSpacing = '6px';
-    // Flash branco → vermelho (impacto MK)
+
+    // Flash branco → vermelho (impacto clássico MK)
     hitFlash.style.background = '#fff';
     hitFlash.style.transition = 'opacity 0.08s';
-    hitFlash.style.opacity = '0.85';
+    hitFlash.style.opacity = '0.9';
     setTimeout(()=>{
-      hitFlash.style.background = 'rgba(120,0,0,0.5)';
-      hitFlash.style.transition = 'opacity 0.6s';
-      hitFlash.style.opacity = '0.25';
-    }, 100);
+      hitFlash.style.background = isBrut ? 'rgba(120,80,0,0.45)' : 'rgba(120,0,0,0.55)';
+      hitFlash.style.transition = 'opacity 0.7s';
+      hitFlash.style.opacity = '0.3';
+    }, 120);
+
+    // Reveal do texto com delay cinematográfico
+    setTimeout(()=>{ textWrap.classList.add('show'); }, 200);
+
+    // Voz clássica "FATALITY" / "BRUTALITY"
     setTimeout(()=>{
-      textWrap.classList.add('show');
-      playFatalitySFX();
       try{
         if(window.speechSynthesis){
-          window.speechSynthesis.cancel();
-          const u = new SpeechSynthesisUtterance('Fatality!');
+          const phrase = isBrut ? 'Brutality' : 'Fatality';
+          const u = new SpeechSynthesisUtterance(phrase);
           u.lang = 'en-US'; u.rate = 0.7; u.pitch = 0.35; u.volume = 1;
+          const voices = window.speechSynthesis.getVoices();
+          const prefer = voices.find(v => /en-US|en_US|English/.test(v.lang) && /male|David|Mark/i.test(v.name))
+                      || voices.find(v => /en/.test(v.lang));
+          if(prefer) u.voice = prefer;
           window.speechSynthesis.speak(u);
         }
       }catch(e){}
-      for(let i=0;i<14;i++){
+      // SFX de impacto
+      try{
+        const ac=getAudio();
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(60,ac.currentTime);
+        o.frequency.exponentialRampToValueAtTime(25,ac.currentTime+1.2);
+        g.gain.setValueAtTime(0.35,ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+1.5);
+        o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+1.6);
+      }catch(e){}
+      // Chuva de sangue na tela
+      for(let i=0;i<16;i++){
         setTimeout(()=>{
           spawnBloodDrip(Math.random()*innerWidth, 0, i%2?'#8b0000':pColor);
-          spawnBloodParticles(Math.random()*innerWidth, Math.random()*innerHeight*0.55, 18, pColor, 'spray');
-          spawnBloodParticles(Math.random()*innerWidth, Math.random()*innerHeight*0.4, 8, '#660000', 'mist');
-          if(i%3===0) spawnBloodParticles(Math.random()*innerWidth, Math.random()*innerHeight*0.3, 6, '#aa0000', 'chunk');
-        }, i*120);
+          spawnBloodParticles(Math.random()*innerWidth, Math.random()*innerHeight*0.55, 20, pColor, 'spray');
+          spawnBloodParticles(Math.random()*innerWidth, Math.random()*innerHeight*0.4, 10, '#660000', 'mist');
+          if(i%3===0) spawnBloodParticles(Math.random()*innerWidth, Math.random()*innerHeight*0.3, 8, '#aa0000', 'chunk');
+        }, i*100);
       }
-      // pools accumulating at bottom
-      for(let i=0;i<6;i++){
+      for(let i=0;i<8;i++){
         setTimeout(()=>{
-          spawnBloodParticles(Math.random()*innerWidth, innerHeight-40, 10, '#4a0000', 'pool');
-        }, 400+i*200);
+          spawnBloodParticles(Math.random()*innerWidth, innerHeight-40, 12, '#4a0000', 'pool');
+        }, 300+i*180);
       }
     }, 80);
-    // Nome da fatality em PT depois do "Fatality!"
+
+    // Nome da fatality em PT
     setTimeout(()=>{
       try{
         if(window.speechSynthesis){
-          const u = new SpeechSynthesisUtterance(winCh.fatalityName);
+          const u = new SpeechSynthesisUtterance(winCh.fatalityName || '');
           u.lang = 'pt-BR'; u.rate = 0.75; u.pitch = 0.45; u.volume = 0.9;
           const voices = window.speechSynthesis.getVoices();
           const prefer = voices.find(v => /pt-BR|pt_BR|Portuguese/.test(v.lang)) || voices.find(v => /pt/.test(v.lang));
@@ -1476,22 +1629,83 @@ function executeFatality() {
           window.speechSynthesis.speak(u);
         }
       }catch(e){}
-    }, 900);
+    }, 1100);
   }
   function endFatality(delay){
-    // Cada fatality dura 8s; segura FATALITY na tela ~2s após o texto
-    const hold = Math.max(delay || 8000, 8000);
+    // Cada fatality dura ~8-10s; depois caminha em direção à tela
+    const hold = Math.max(delay || 8500, 8500);
     setTimeout(()=>{
       stopFatalityParticleLoop();
       document.getElementById('fatality-overlay').classList.remove('active');
+      const tw = document.getElementById('fatality-text-wrap');
+      if(tw) tw.classList.remove('show');
+      const vig = document.getElementById('fatality-vignette');
+      if(vig) vig.classList.remove('active');
+      const wordEl = document.getElementById('fatality-word');
+      if(wordEl) wordEl.classList.remove('brutality');
       hitFlash.style.opacity = '0';
       hitFlash.style.transition = '';
-      if(camera){
-        camera.fov = 55;
-        camera.updateProjectionMatrix();
+      // Restaura escala do perdedor
+      try{
+        loseF.root.scale.set(1,1,1);
+        if(loseF.armPivotL) loseF.armPivotL.scale.set(1,1,1);
+        if(loseF.armPivotR) loseF.armPivotR.scale.set(1,1,1);
+        if(loseF.legPivotL) loseF.legPivotL.scale.set(1,1,1);
+        if(loseF.legPivotR) loseF.legPivotR.scale.set(1,1,1);
+        if(loseF.head) loseF.head.scale.set(1,1,1);
+        loseF.root.visible = true;
+      }catch(e){}
+      // Caminha em direção à tela, depois mostra vencedor
+      if(typeof walkToCamera === 'function'){
+        walkToCamera(()=>{
+          if(camera){ camera.fov = 55; camera.updateProjectionMatrix(); }
+          showWinnerScreen(winner, fatalityState.isBrutality ? 'brutality' : 'fatality');
+        });
+      } else {
+        if(camera){ camera.fov = 55; camera.updateProjectionMatrix(); }
+        showWinnerScreen(winner, fatalityState.isBrutality ? 'brutality' : 'fatality');
       }
-      showWinnerScreen(winner, 'fatality');
     }, hold);
+  }
+  // ═══ DESMEMBRAMENTO VISUAL estilo MK ═══
+  function dismember(part, delay){
+    setTimeout(()=>{
+      try{
+        const [sx,sy] = screenXY(loseF, 0.5);
+        if(part==='head' && loseF.head){
+          loseF.head.scale.set(0.01,0.01,0.01);
+          bloodBurst(sx, sy-40, 35, [pColor,'#cc0000','#8b0000']);
+          spawnGoreExplosion(sx, sy-40, 1.8);
+        } else if(part==='armL' && loseF.armPivotL){
+          loseF.armPivotL.scale.set(0.01,0.01,0.01);
+          bloodBurst(sx-30, sy, 22, [pColor,'#aa0000']);
+          spawnArterialSpray(sx-30, sy, -1, '#cc0000');
+        } else if(part==='armR' && loseF.armPivotR){
+          loseF.armPivotR.scale.set(0.01,0.01,0.01);
+          bloodBurst(sx+30, sy, 22, [pColor,'#aa0000']);
+          spawnArterialSpray(sx+30, sy, 1, '#cc0000');
+        } else if(part==='legL' && loseF.legPivotL){
+          loseF.legPivotL.scale.set(0.01,0.01,0.01);
+          bloodBurst(sx-20, sy+50, 18, [pColor,'#8b0000']);
+        } else if(part==='legR' && loseF.legPivotR){
+          loseF.legPivotR.scale.set(0.01,0.01,0.01);
+          bloodBurst(sx+20, sy+50, 18, [pColor,'#8b0000']);
+        } else if(part==='torso'){
+          loseF.root.scale.set(1.2, 0.35, 1.2);
+          bloodBurst(sx, sy, 40, [pColor,'#cc0000','#8b0000','#ff2222']);
+          spawnGoreExplosion(sx, sy, 2.2);
+        } else if(part==='all'){
+          loseF.root.scale.set(0.15, 0.15, 0.15);
+          bloodBurst(sx, sy, 50, [pColor,'#cc0000','#8b0000','#ff0000']);
+          spawnGoreExplosion(sx, sy, 2.5);
+          for(let i=0;i<8;i++) setTimeout(()=>{
+            spawnBloodParticles(sx+(Math.random()-0.5)*100, sy+(Math.random()-0.5)*80, 12, '#8b0000', 'chunk');
+          }, i*60);
+        }
+        playHit('super');
+        shakeCamera = 2.5;
+      }catch(e){}
+    }, delay||0);
   }
   function liftLoser(kx, ky){
     loseF.vel.x = winF.facing * kx;
@@ -1510,8 +1724,10 @@ function executeFatality() {
     loseF.vel.set(0,0,0);
     loseF.isGrounded = true;
     loseF.pos.y = FLOOR_Y;
-    loseF.root.rotation.z = 1.4;
-    loseF.root.position.y = 0.3;
+    loseF.root.rotation.z = 0.08;
+    loseF.root.rotation.x = -0.15;
+    loseF.root.position.y = (typeof FIGHTER_GROUND_Y!=='undefined'?FIGHTER_GROUND_Y:1.1)-0.12;
+    loseF.setState(STATES.KO, true);
     // gore ao bater no chão
     try{
       const [sx,sy]=screenXY(loseF, 0.15);
@@ -1766,11 +1982,14 @@ function executeFatality() {
               fatBurst(loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2, 0, 16, 'explode');
               fatBlood(10, ['#ff0000','#ffaa00','#ffd600']);
             }, i*50);
-            setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 800);
+            setTimeout(()=>{ 
+              dismember('all', 0);
+              setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 500);
+            }, 800);
           }
         }, 200);
         setTimeout(showFatalityText, 5200);
-        endFatality(8000);
+        endFatality(9000);
       }, 300);
     },
 
@@ -2245,13 +2464,18 @@ function executeFatality() {
                 fatBurst(loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y+Math.random(), 0, 12, 'explode');
                 fatBlood(7, [pColor,fColor,'#fff','#80deea']);
               }, i*50);
-              setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 1000);
+              setTimeout(()=>{ 
+                dismember('head', 0);
+                dismember('armL', 150);
+                dismember('armR', 300);
+                setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 500);
+              }, 1000);
             }, 300);
           }, 500);
         }
       }, 180);
       setTimeout(showFatalityText, 5500);
-      endFatality(8000);
+      endFatality(9000);
     },
 
     // ═══ SOM (8s) — Ondas sônicas destroem ═══
@@ -2304,13 +2528,18 @@ function executeFatality() {
                 fatBlood(7, [pColor,fColor,'#aaff00']);
                 loseF.root.scale.setScalar(Math.max(0.25, 1-i*0.05));
               }, i*55);
-              setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 950);
+              setTimeout(()=>{ 
+                dismember('head', 0);
+                dismember('armL', 200);
+                dismember('armR', 350);
+                setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 600);
+              }, 950);
             }, 300);
           }
         }, 220);
       }, 250);
       setTimeout(showFatalityText, 5500);
-      endFatality(8000);
+      endFatality(8500);
     },
 
     // ═══ TITÃ (8s) — Pisadas colossais ═══
@@ -2334,85 +2563,152 @@ function executeFatality() {
             fatBurst(loseF.pos.x+(Math.random()-0.5)*3, FLOOR_Y+0.1, 0, 14, 'ground');
             fatBlood(9, [pColor,fColor,'#ffd600']);
           }, i*50);
-          setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 1000);
+          setTimeout(()=>{ 
+            dismember('all', 0);
+            setTimeout(()=>{ loseF.root.scale.set(1,1,1); slamLoser(); }, 800);
+          }, 1000);
         }
       }, 350);
       setTimeout(showFatalityText, 5500);
-      endFatality(8000);
+      endFatality(9000);
     },
 
     // ═══ FÊNIX (8s) — Voa, agarra, queima no ar ═══
+    // ═══ FÊNIX (10s) — Vira fênix, derrete o inimigo vivo, vira águia e vem à tela ═══
     phoenix_ashes(){
-      winF.setState(STATES.JUMP, true); winF.stateTime = 0; playHit('whoosh');
-      const startY = winF.pos.y;
-      let flyT = 0;
-      const flyIv = setInterval(()=>{
-        flyT++;
-        winF.pos.y = startY + Math.min(6.5, flyT*0.4);
+      winF.setState(STATES.SPECIAL, true); winF.stateTime = 0; playHit('whoosh');
+      showAnnounce('RENASCIMENTO!','🐦 FÊNIX', 1600);
+
+      // ── 1. TRANSFORMAÇÃO EM FÊNIX ──
+      let transT = 0;
+      const origScale = {x:1,y:1,z:1};
+      const transIv = setInterval(()=>{
+        transT++;
+        const p = Math.min(1, transT/20);
+        // Cresce e brilha como fênix
+        winF.root.scale.set(1+p*0.35, 1+p*0.5, 1+p*0.35);
+        winF.auraRing.scale.setScalar(1.5 + p*2.5);
+        winF.auraRing2.scale.setScalar(1.3 + p*2);
+        winF.auraRing.material.opacity = 0.9;
+        winF.pos.y = FLOOR_Y + p*1.8;
         winF.isGrounded = false; winF.vel.y = 0;
-        winF.auraRing.scale.setScalar(1.3+flyT*0.08);
-        fatBurst(winF.pos.x, winF.pos.y+FIGHTER_GROUND_Y*0.4, 0, 10, 'rise');
-        flash(fColor, 0.12, 0.08); shakeCamera = 0.3+flyT*0.05;
-        if(flyT >= 14){ // ~0.7s
-          clearInterval(flyIv);
-          winF.setState(STATES.UPPERCUT, true); winF.stateTime = 0;
-          let diveT = 0; const diveY = winF.pos.y;
-          const diveIv = setInterval(()=>{
-            diveT++;
-            const p = Math.min(1, diveT/8);
-            winF.pos.y = diveY+(loseF.pos.y+1.0-diveY)*p;
-            winF.pos.x += (loseF.pos.x-winF.pos.x)*0.22;
-            if(diveT >= 8){
-              clearInterval(diveIv);
-              flash('#ffd600', 0.7, 0.2); shakeCamera = 2; playHit('heavy');
-              let liftT = 0;
-              const liftIv = setInterval(()=>{
-                liftT++;
-                winF.pos.y += 0.35;
-                loseF.pos.y = winF.pos.y-0.3;
-                loseF.pos.x = winF.pos.x+winF.facing*0.4;
-                loseF.isGrounded = false; loseF.vel.set(0,0,0);
-                loseF.root.rotation.z = 0.3+liftT*0.06;
-                fatBurst(loseF.pos.x, loseF.pos.y+FIGHTER_GROUND_Y, 0, 10, 'rise');
-                fatBlood(6, [pColor,fColor,'#ffaa00']);
-                if(liftT%3===0) playHit('special');
-                if(liftT >= 12){
-                  clearInterval(liftIv);
-                  winF.setState(STATES.SUPER, true); winF.stateTime = 0.1;
-                  flash('#ff3d00', 1, 0.4); shakeCamera = 4; playHit('super');
-                  let burns = 0;
-                  const burnIv = setInterval(()=>{
-                    burns++;
-                    fatBurst(loseF.pos.x+(Math.random()-0.5), loseF.pos.y+FIGHTER_GROUND_Y+Math.random(), 0, 16, 'rise');
-                    fatBlood(8, [pColor,fColor,'#ffd600','#fff']);
-                    loseF.root.scale.setScalar(Math.max(0.15, 1-burns*0.08));
-                    flash(burns%2?'#ffd600':'#ff3d00', 0.3, 0.1);
-                    if(burns >= 10){
-                      clearInterval(burnIv);
-                      flash('#ffd600', 1, 0.6); shakeCamera = 5; playHit('super');
-                      loseF.root.visible = false;
-                      for(let i=0;i<12;i++) setTimeout(()=>{
-                        fatBurst(loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2, 0, 14, 'explode');
-                        fatBlood(10, [pColor,fColor,'#ffd600','#ff6600']);
-                      }, i*40);
-                      setTimeout(()=>{
-                        winF.pos.y = FLOOR_Y; winF.isGrounded = true;
-                        winF.root.position.y = FIGHTER_GROUND_Y;
-                        winF.auraRing.scale.setScalar(1);
-                        loseF.root.visible = true; loseF.root.scale.set(1,1,1);
-                        loseF.root.rotation.set(0,0,1.5); loseF.pos.y = FLOOR_Y;
-                        slamLoser();
-                      }, 700);
-                    }
-                  }, 120);
+        // Chamas ao redor
+        fatBurst(winF.pos.x+(Math.random()-0.5)*1.2, winF.pos.y+FIGHTER_GROUND_Y*0.5, 0, 12, 'rise');
+        fatBurst(winF.pos.x, winF.pos.y+0.3, 0, 6, 'spark');
+        flash(transT%2?'#ffd600':'#ff3d00', 0.2, 0.08);
+        shakeCamera = 0.4 + p*0.5;
+        if(transT%3===0) playHit('special');
+        if(transT >= 20){
+          clearInterval(transIv);
+          flash('#ffd600', 0.85, 0.3); shakeCamera = 2.5; playHit('super');
+
+          // ── 2. DERRETE O INIMIGO VIVO ──
+          let meltT = 0;
+          const meltIv = setInterval(()=>{
+            meltT++;
+            const mp = Math.min(1, meltT/28);
+            // Inimigo derrete: afunda e encolhe no eixo Y
+            loseF.vel.set(0,0,0);
+            loseF.isGrounded = true;
+            loseF.pos.y = FLOOR_Y;
+            loseF.root.scale.y = Math.max(0.05, 1 - mp*0.95);
+            loseF.root.scale.x = 1 + mp*0.4;
+            loseF.root.scale.z = 1 + mp*0.4;
+            loseF.root.position.y = FIGHTER_GROUND_Y * (1-mp) * 0.3;
+            loseF.root.rotation.z = mp*0.3;
+            // Chamas cobrindo o corpo
+            fatBurst(loseF.pos.x+(Math.random()-0.5)*0.8, FLOOR_Y+0.2+Math.random()*1.2*(1-mp), 0, 14, 'rise');
+            fatBurst(loseF.pos.x, FLOOR_Y+0.15, 0, 8, 'ground');
+            fatBlood(5, [pColor, fColor, '#ffd600', '#ff6600']);
+            flash(meltT%2?'#ff3d00':'#ffaa00', 0.25, 0.08);
+            shakeCamera = 0.8 + mp*1.2;
+            if(meltT%2===0) playHit('special');
+            // Fênix paira e cospe fogo
+            winF.pos.y = FLOOR_Y + 2.2 + Math.sin(meltT*0.3)*0.3;
+            winF.root.rotation.y += 0.08;
+            fatBurst(winF.pos.x, winF.pos.y+0.5, 0, 6, 'rise');
+
+            if(meltT >= 28){
+              clearInterval(meltIv);
+              // Cinzas finais
+              flash('#ff3d00', 1, 0.5); shakeCamera = 4; playHit('super');
+              loseF.root.scale.set(1.5, 0.05, 1.5);
+              loseF.root.position.y = 0.05;
+              for(let i=0;i<16;i++) setTimeout(()=>{
+                fatBurst(loseF.pos.x+(Math.random()-0.5)*2, FLOOR_Y+0.1, 0, 12, 'rise');
+                fatBurst(loseF.pos.x, FLOOR_Y+0.3+Math.random(), 0, 8, 'spark');
+                fatBlood(6, [pColor,'#ffd600','#ff3d00']);
+              }, i*40);
+
+              setTimeout(()=>{
+                loseF.root.visible = false;
+                loseF.root.scale.set(1,1,1);
+
+                // ── 3. VIRA ÁGUIA E VEM EM DIREÇÃO À TELA ──
+                showAnnounce('ÁGUIA DE FOGO!','🦅', 1500);
+                winF.root.scale.set(1.6, 1.8, 1.6);
+                winF.auraRing.scale.setScalar(4);
+                winF.auraRing2.scale.setScalar(3.5);
+                // Frente para a câmera
+                winF.root.rotation.y = 0;
+                winF.root.rotation.x = -0.25; // inclina como voo
+                winF.armPivotL.rotation.set(-2.2, 0, -1.4); // asas abertas
+                winF.armPivotR.rotation.set(-2.2, 0, 1.4);
+                winF.legPivotL.rotation.x = 0.6;
+                winF.legPivotR.rotation.x = 0.6;
+                winF.setState(STATES.JUMP, true);
+
+                const startZ = winF.pos.z || 0;
+                const startY = winF.pos.y;
+                const startCamZ = camera ? camera.position.z : 12;
+                let flyT = 0;
+                const flyDur = 2.8;
+                function eagleFly(){
+                  flyT += 1/60;
+                  const fp = Math.min(1, flyT/flyDur);
+                  const ease = fp*fp*(3-2*fp);
+                  // Voa em direção à câmera (+Z) e sobe
+                  winF.pos.z = startZ + ease * 6.5;
+                  winF.pos.y = startY + Math.sin(fp*Math.PI)*2.5 + ease*1.5;
+                  winF.pos.x += ( (camera?camera.position.x:0) - winF.pos.x ) * 0.04;
+                  // Bate asas
+                  const wing = Math.sin(flyT*12);
+                  winF.armPivotL.rotation.z = -1.4 - wing*0.5;
+                  winF.armPivotR.rotation.z = 1.4 + wing*0.5;
+                  winF.armPivotL.rotation.x = -2.2 + wing*0.2;
+                  winF.armPivotR.rotation.x = -2.2 + wing*0.2;
+                  winF.root.rotation.x = -0.25 + Math.sin(flyT*4)*0.08;
+                  // Rastro de fogo
+                  fatBurst(winF.pos.x+(Math.random()-0.5), winF.pos.y, winF.pos.z, 8, 'rise');
+                  fatBurst(winF.pos.x, winF.pos.y-0.3, winF.pos.z-0.5, 5, 'spark');
+                  if(flyT%4<0.05) flash('#ffd600', 0.15, 0.06);
+                  if(camera){
+                    camera.position.x += (winF.pos.x - camera.position.x)*0.1;
+                    camera.position.y += (winF.pos.y*0.5+2 - camera.position.y)*0.08;
+                    camera.position.z = startCamZ - ease*3.5;
+                    camera.fov = 48 - ease*16;
+                    camera.updateProjectionMatrix();
+                    camera.lookAt(winF.pos.x, winF.pos.y+0.5, winF.pos.z);
+                  }
+                  if(fp < 1){ requestAnimationFrame(eagleFly); return; }
+
+                  // Pose final da águia na tela
+                  flash('#ffd600', 0.9, 0.5); shakeCamera = 3; playHit('super');
+                  winF.armPivotL.rotation.set(-2.4,0,-1.6);
+                  winF.armPivotR.rotation.set(-2.4,0,1.6);
+                  for(let i=0;i<12;i++) setTimeout(()=>{
+                    fatBurst(winF.pos.x+(Math.random()-0.5)*2, winF.pos.y+Math.random(), winF.pos.z, 10, 'rise');
+                  }, i*50);
                 }
-              }, 55);
+                requestAnimationFrame(eagleFly);
+              }, 800);
             }
-          }, 40);
+          }, 90);
         }
       }, 50);
-      setTimeout(showFatalityText, 6200);
-      endFatality(8000);
+
+      setTimeout(showFatalityText, 7500);
+      endFatality(10000);
     },
 
     // ═══ LEVIATÃ (8s) — Tentáculos + voragem ═══
@@ -2544,28 +2840,33 @@ function executeFatality() {
               fatBurst(loseF.pos.x+(Math.random()-0.5)*2, loseF.pos.y+FIGHTER_GROUND_Y+Math.random()*2, 0, 16, 'explode');
               fatBlood(10, [pColor,fColor,'#ffd600','#ff1744']);
             }, i*45);
+            dismember('armL', 400);
+            dismember('armR', 550);
+            dismember('head', 700);
+            dismember('torso', 900);
           }, 200);
         }
       };
       winF.setState(STATES.WALK, true);
       setTimeout(doHit, 200);
       setTimeout(showFatalityText, 5500);
-      endFatality(8000);
+      endFatality(9000);
     },
   };
 
   function approachStep(){
-    // ═══ FASE 1: caminhada lenta estilo Mortal Kombat ═══
+    // ═══ FASE 1: caminhada lenta até o inimigo ═══
     winF.setState(STATES.WALK, true);
     let approachT = 0;
-    const approachDur = 1.35;
+    const approachDur = 1.4;
     function step(){
       approachT += 1/60;
       const p = Math.min(1, approachT/approachDur);
       const ease = p*p*(3-2*p);
       winF.pos.x = startX + (approachTarget - startX) * ease;
       winF.facing = loseF.pos.x > winF.pos.x ? 1 : -1;
-      // Câmera acompanha o vencedor
+      // Orientação para o inimigo
+      winF.root.rotation.y = winF.facing > 0 ? Math.PI/2 : -Math.PI/2;
       if(camera){
         const cx = (winF.pos.x + loseF.pos.x) / 2;
         camera.position.x += (cx - camera.position.x) * 0.08;
@@ -2573,43 +2874,175 @@ function executeFatality() {
         camera.position.y += (3.0 - camera.position.y) * 0.05;
         camera.lookAt(cx, 1.4, 0);
       }
-      // Vítima treme (tonta)
       loseF.root.rotation.z = 0.9 + Math.sin(approachT*8)*0.08;
       loseF.root.position.y = 0.4 + Math.sin(approachT*6)*0.03;
       if(p < 1){ requestAnimationFrame(step); return; }
 
-      // ═══ FASE 2: pose de deboche (taunt) ═══
+      // ═══ FASE 2: DEBOCHE no inimigo ═══
       winF.setState(STATES.IDLE, true);
-      winF.armPivotR.rotation.x = -0.3;
-      winF.armPivotL.rotation.x = -0.3;
       playHit('whoosh');
-      // Close-up no vencedor
+      // Pose de deboche: aponta / flexiona
+      winF.armPivotR.rotation.x = -1.8;
+      winF.armPivotR.rotation.z = 0.3;
+      winF.armPivotL.rotation.x = -0.4;
+      winF.armPivotL.rotation.z = -0.5;
+      winF.head.rotation.y = 0.15 * winF.facing;
+      winF.torso.rotation.y = 0.2 * winF.facing;
+
+      // Frases de deboche
+      const taunts = [
+        'FRACO DEMAIS!',
+        'É SÓ ISSO?!',
+        'PATHETIC!',
+        'ACABOU PRA VOCÊ!',
+        'NEM LUTOU!',
+        'HAHAHA!',
+        'YOU SUCK!',
+        'INÚTIL!'
+      ];
+      const tauntMsg = taunts[Math.floor(Math.random()*taunts.length)];
+      showAnnounce(tauntMsg, winCh.name, 1800);
+
       if(camera){
-        camera.position.z = 8.5;
-        camera.position.y = 2.8;
-        camera.fov = 38;
+        camera.position.set(winF.pos.x - winF.facing*1.2, 2.6, 7.5);
+        camera.fov = 36;
         camera.updateProjectionMatrix();
-        camera.lookAt(winF.pos.x, 1.6, 0);
+        camera.lookAt(winF.pos.x, 1.5, 0);
       }
-      flash('rgba(80,0,0,0.4)', 0.35, 0.4);
+      flash('rgba(80,0,0,0.35)', 0.3, 0.4);
+
+      // Cabeça balança debochando
+      let tauntT = 0;
+      const tauntIv = setInterval(()=>{
+        tauntT++;
+        winF.head.rotation.z = Math.sin(tauntT*0.4)*0.12;
+        winF.armPivotR.rotation.x = -1.8 + Math.sin(tauntT*0.3)*0.15;
+        if(tauntT >= 50) clearInterval(tauntIv);
+      }, 30);
 
       setTimeout(()=>{
-        // ═══ FASE 3: EXECUÇÃO ═══
-        if(camera){
-          camera.position.z = 9.5;
-          camera.fov = 44;
-          camera.updateProjectionMatrix();
-          camera.lookAt((winF.pos.x+loseF.pos.x)/2, 1.5, 0);
+        clearInterval(tauntIv);
+        // ═══ FASE 3: VIRAR DE FRENTE PARA A CÂMERA ═══
+        winF.setState(STATES.IDLE, true);
+        let turnT = 0;
+        const startYaw = winF.root.rotation.y;
+        const targetYaw = 0; // frente para a câmera (+Z)
+        function turnStep(){
+          turnT += 1/60;
+          const tp = Math.min(1, turnT/0.7);
+          const te = tp*tp*(3-2*tp);
+          winF.root.rotation.y = startYaw + (targetYaw - startYaw) * te;
+          // Braços abertos / pose de vitória de frente
+          winF.armPivotL.rotation.x = -0.2 - te*0.8;
+          winF.armPivotR.rotation.x = -0.2 - te*0.8;
+          winF.armPivotL.rotation.z = -0.3 - te*0.6;
+          winF.armPivotR.rotation.z = 0.3 + te*0.6;
+          winF.head.rotation.y = 0;
+          winF.head.rotation.z = 0;
+          winF.torso.rotation.y = 0;
+          if(camera){
+            camera.position.x += (winF.pos.x - camera.position.x)*0.1;
+            camera.position.z += (6.5 - camera.position.z)*0.08;
+            camera.position.y += (2.4 - camera.position.y)*0.08;
+            camera.fov += (34 - camera.fov)*0.08;
+            camera.updateProjectionMatrix();
+            camera.lookAt(winF.pos.x, 1.5, 0);
+          }
+          if(tp < 1){ requestAnimationFrame(turnStep); return; }
+
+          // Segura pose de frente um momento
+          playHit('whoosh');
+          flash('rgba(255,200,0,0.25)', 0.3, 0.35);
+          setTimeout(()=>{
+            // ═══ FASE 4: vira de volta e EXECUTA FATALITY ═══
+            winF.facing = loseF.pos.x > winF.pos.x ? 1 : -1;
+            const backYaw = winF.facing > 0 ? Math.PI/2 : -Math.PI/2;
+            let backT = 0;
+            function backStep(){
+              backT += 1/60;
+              const bp = Math.min(1, backT/0.45);
+              winF.root.rotation.y = targetYaw + (backYaw - targetYaw) * bp;
+              if(bp < 1){ requestAnimationFrame(backStep); return; }
+
+              if(camera){
+                camera.position.z = 9.5;
+                camera.fov = 44;
+                camera.updateProjectionMatrix();
+                camera.lookAt((winF.pos.x+loseF.pos.x)/2, 1.5, 0);
+              }
+              startBloodAnimation();
+              startFatalityParticleLoop(effect);
+              fatalityOpenBurst(effect);
+              const anim = FATALITY_ANIMS[effect] || FATALITY_ANIMS.crush;
+              anim();
+            }
+            requestAnimationFrame(backStep);
+          }, 900);
         }
-        startBloodAnimation();
-        startFatalityParticleLoop(effect);
-        fatalityOpenBurst(effect);
-        const anim = FATALITY_ANIMS[effect] || FATALITY_ANIMS.crush;
-        anim();
-      }, 700);
+        requestAnimationFrame(turnStep);
+      }, 1600);
     }
     requestAnimationFrame(step);
   }
+
+  // ═══ Após fatality: caminha em direção à tela ═══
+  function walkToCamera(then){
+    // Se já veio em direção à tela (ex: águia da Fênix), só pose final
+    if((winF.pos.z||0) > 3.5){
+      winF.setState(STATES.IDLE, true);
+      winF.root.rotation.y = 0;
+      winF.armPivotL.rotation.set(-1.2,0,-0.9);
+      winF.armPivotR.rotation.set(-1.2,0,0.9);
+      playHit('whoosh');
+      setTimeout(()=>{ if(then) then(); }, 600);
+      return;
+    }
+    winF.setState(STATES.WALK, true);
+    // Frente para a câmera
+    winF.root.rotation.y = 0;
+    winF.armPivotL.rotation.set(-0.3,0,-0.2);
+    winF.armPivotR.rotation.set(-0.3,0,0.2);
+    const startZ = winF.pos.z || 0;
+    const startCamZ = camera ? camera.position.z : 12;
+    let t = 0;
+    const dur = 2.2;
+    function walkStep(){
+      t += 1/60;
+      const p = Math.min(1, t/dur);
+      const ease = p*p*(3-2*p);
+      // Personagem avança em direção à câmera (+Z)
+      winF.pos.z = startZ + ease * 4.5;
+      winF.root.rotation.y = 0;
+      // Animação de caminhada
+      const w = Math.sin(t*10);
+      winF.legPivotL.rotation.x = w*0.5;
+      winF.legPivotR.rotation.x = -w*0.5;
+      winF.armPivotL.rotation.x = -0.3 - w*0.3;
+      winF.armPivotR.rotation.x = -0.3 + w*0.3;
+      winF.root.position.y = (typeof FIGHTER_GROUND_Y!=='undefined'?FIGHTER_GROUND_Y:1.1) + Math.abs(Math.sin(t*10))*0.05;
+      if(camera){
+        // Câmera recua um pouco enquanto ele se aproxima (sensação de vir à tela)
+        camera.position.x += (winF.pos.x - camera.position.x)*0.12;
+        camera.position.y += (2.2 - camera.position.y)*0.08;
+        camera.position.z = startCamZ - ease*2.5;
+        camera.fov = 44 - ease*10;
+        camera.updateProjectionMatrix();
+        camera.lookAt(winF.pos.x, 1.6, winF.pos.z);
+      }
+      if(p < 1){ requestAnimationFrame(walkStep); return; }
+      // Pose final de vitória de frente
+      winF.setState(STATES.IDLE, true);
+      winF.armPivotL.rotation.set(-1.2,0,-0.9);
+      winF.armPivotR.rotation.set(-1.2,0,0.9);
+      winF.legPivotL.rotation.x = 0;
+      winF.legPivotR.rotation.x = 0;
+      playHit('whoosh');
+      flash('rgba(255,214,0,0.3)', 0.35, 0.5);
+      setTimeout(()=>{ if(then) then(); }, 800);
+    }
+    requestAnimationFrame(walkStep);
+  }
+
   requestAnimationFrame(approachStep);
 }
 
@@ -3774,6 +4207,30 @@ function animateProjectileMesh(pr, dt) {
 // ══════════════════════════════════════════════════════
 //  PROJECTILE MANAGEMENT
 // ══════════════════════════════════════════════════════
+function createHookProjectile(owner){
+  const ch=owner.ch;
+  const group=new THREE.Group();
+  // Corrente/gancho visual
+  const mat=new THREE.MeshBasicMaterial({color:ch.c1||0xffd600,transparent:true,opacity:0.95});
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(0.12,0.35,6),mat);
+  tip.rotation.z=Math.PI/2;
+  group.add(tip);
+  for(let i=0;i<5;i++){
+    const link=new THREE.Mesh(new THREE.TorusGeometry(0.08,0.03,6,10),
+      new THREE.MeshBasicMaterial({color:ch.c2||ch.c1||0xffaa00,transparent:true,opacity:0.8}));
+    link.position.x=-0.2-i*0.18;
+    link.rotation.y=Math.PI/2;
+    group.add(link);
+  }
+  const pl=new THREE.PointLight(ch.c1||0xffd600,3,5);
+  group.add(pl);
+  group.position.set(owner.pos.x+owner.facing*1.5, owner.pos.y+FIGHTER_GROUND_Y+0.55, owner.pos.z);
+  scene.add(group);
+  projectiles.push({
+    mesh:group, owner, speed:22, life:0, maxLife:1.2, hit:false,
+    isSuper:false, isHook:true, dmg:8, scale:1.0
+  });
+}
 function createProjectile(owner,isSuper=false){
   const ch=owner.ch;
   const meshGroup=buildElementalProjectile(ch,isSuper);
@@ -3800,9 +4257,49 @@ function updateProjectiles(dt){
         fd *= pr.owner.comboMultiplier;
       }
       target.hp=Math.max(0,target.hp-fd);scheduleGhostHp(target);
-      if(!isBlocked){target.vel.x=pr.owner.facing*(pr.isSuper?14:10);target.vel.y=pr.isSuper?10:7;target.isGrounded=false;target.setState(STATES.HURT,true);pr.owner.combo++;currentComboOwner=pr.owner.id;comboFadeTimer=2.5;updateComboHUD(pr.owner.combo);pr.owner.superMeter=Math.min(MAX_SUPER,pr.owner.superMeter+20);}
+      if(!isBlocked){
+        if(pr.isHook){
+          // GRUDAR: puxa o inimigo até o atacante
+          target.setState(STATES.HURT, true);
+          target.isGrounded=false;
+          target.vel.y=2;
+          // Puxa até perto do dono do gancho
+          const pullTarget = pr.owner.pos.x + pr.owner.facing*1.6;
+          target.pos.x = pullTarget;
+          target.vel.x = 0;
+          target.tookDamage=true;
+          pr.owner.combo++;currentComboOwner=pr.owner.id;comboFadeTimer=3.0;updateComboHUD(pr.owner.combo);
+          pr.owner.superMeter=Math.min(MAX_SUPER,pr.owner.superMeter+15);
+          shakeCamera=0.45;
+          flashScreen(0.3, hexStr(pr.owner.ch.c1));
+          playHit('heavy');
+          showAnnounce('GET OVER HERE!','🪝',900);
+          // Pequeno stun para permitir combo
+          target.stateTime=-0.15;
+          pr.owner.hitCooldown=0.05;
+        } else {
+          target.vel.x=pr.owner.facing*(pr.isSuper?14:10);target.vel.y=pr.isSuper?10:7;target.isGrounded=false;target.setState(STATES.HURT,true);
+          pr.owner.combo++;currentComboOwner=pr.owner.id;comboFadeTimer=2.5;updateComboHUD(pr.owner.combo);
+          pr.owner.superMeter=Math.min(MAX_SUPER,pr.owner.superMeter+20);
+          target.tookDamage=true;
+        }
+      }
       else{target.stamina-=22;target.superMeter=Math.min(MAX_SUPER,target.superMeter+3);}
       spawnP(sys,pr.mesh.position.x,pr.mesh.position.y,pr.mesh.position.z,pr.isSuper?28:14,'hit');
+      // Sangue clássico MK em projéteis
+      if(!isBlocked){
+        target.tookDamage = true;
+        if(typeof bloodBurst3D==='function'){
+          bloodBurst3D(target, 0.8, pr.isSuper?36:18, '#bb0000');
+          if(pr.isSuper) bloodBurst3D(target, 1.2, 16, '#8b0000');
+        } else if(typeof spawnBloodParticles==='function'){
+          const sx = (pr.mesh.position.x / 20 + 0.5) * innerWidth;
+          const sy = ((-pr.mesh.position.y / 12) + 0.55) * innerHeight;
+          spawnBloodParticles(sx, sy, pr.isSuper?36:18, '#bb0000', 'spray');
+          if(pr.isSuper) spawnGoreExplosion(sx, sy, 1.5);
+          if(typeof startBloodAnimation==='function') startBloodAnimation();
+        }
+      }
       shakeCamera=pr.isSuper?0.6:0.4;flashScreen(isBlocked?0.1:0.3,hexStr(pr.owner.ch.projColor));
       if(pr.isSuper){superFlash();playHit('super');}else playHit('special');
       showDmgPopup(pr.mesh.position.clone(),Math.round(fd),isBlocked,pr.isSuper);
@@ -3819,7 +4316,7 @@ function scheduleGhostHp(fighter){
 // ══════════════════════════════════════════════════════
 //  FIGHTER CLASS
 // ══════════════════════════════════════════════════════
-const STATES={IDLE:'idle',WALK:'walk',JUMP:'jump',DASH:'dash',PUNCH:'punch',KICK:'kick',BLOCK:'block',HURT:'hurt',SPECIAL:'special',SUPER:'super',KO:'ko',UPPERCUT:'uppercut',ELBOW:'elbow',HEAVY:'heavy',SWEEP:'sweep',TELEPORT:'teleport'};
+const STATES={IDLE:'idle',WALK:'walk',JUMP:'jump',DASH:'dash',PUNCH:'punch',KICK:'kick',BLOCK:'block',HURT:'hurt',SPECIAL:'special',SUPER:'super',KO:'ko',UPPERCUT:'uppercut',ELBOW:'elbow',HEAVY:'heavy',SWEEP:'sweep',TELEPORT:'teleport',HOOK:'hook'};
 // Personagens com teletransporte aprimorado (mais longe, menos custo)
 const TELEPORT_CHARS = new Set(['space','darkness','tech','thunder','wind','moon','voidking','stormlord','phoenix']);
 class Fighter{
@@ -3835,7 +4332,7 @@ class Fighter{
     // Novo: Sistema de combos avançado
     this.comboSequence=[];this.comboTimer=0;this.currentComboPattern=null;
     this.comboMultiplier=1.0;this.lastHitTime=0;this.superComboMeter=0;
-    this.teleportCooldown=0;this.teleportDir=1;
+    this.teleportCooldown=0;this.teleportDir=1;this.hookUses=2;this.maxHookUses=2;this.hookCooldown=0;
     this._build();
   }
   _build(){
@@ -4020,7 +4517,7 @@ class Fighter{
     }
   }
   _isBusy(){
-    return this.state===STATES.PUNCH||this.state===STATES.KICK||this.state===STATES.SPECIAL||this.state===STATES.SUPER||this.state===STATES.UPPERCUT||this.state===STATES.ELBOW||this.state===STATES.HEAVY||this.state===STATES.SWEEP||this.state===STATES.TELEPORT;
+    return this.state===STATES.PUNCH||this.state===STATES.KICK||this.state===STATES.SPECIAL||this.state===STATES.SUPER||this.state===STATES.UPPERCUT||this.state===STATES.ELBOW||this.state===STATES.HEAVY||this.state===STATES.SWEEP||this.state===STATES.TELEPORT||this.state===STATES.HOOK;
   }
   applyControl(input){
     if(this.state===STATES.KO||this.state===STATES.HURT||this.state===STATES.TELEPORT)return;
@@ -4054,6 +4551,27 @@ class Fighter{
     if(input.sweep&&this.stamina>=12&&!this._isBusy()){this.stamina-=12;this.setState(STATES.SWEEP);playHit('whoosh');}
     if(input.uppercut&&this.stamina>=18&&!this._isBusy()){this.stamina-=18;this.setState(STATES.UPPERCUT);playHit('whoosh');}
     if(input.elbow&&this.stamina>=6&&!this._isBusy()){this.stamina-=6;this.setState(STATES.ELBOW);playHit('whoosh');}
+    // Gancho/grudar à distância (2 usos por round) — só se inimigo estiver longe
+    this.hookCooldown=Math.max(0,this.hookCooldown-1/60);
+    if(input.hook&&this.hookUses>0&&this.hookCooldown<=0&&this.stamina>=10&&!this._isBusy()){
+      const opp=this.opponent;
+      const dist=opp?Math.abs(this.pos.x-opp.pos.x):0;
+      if(opp&&dist>=3.5){
+        this.stamina-=10;
+        this.hookUses--;
+        this.hookCooldown=0.8;
+        this.setState(STATES.HOOK);
+        playHit('whoosh');
+        try{
+          const ac=getAudio();
+          const o=ac.createOscillator(),g=ac.createGain();
+          o.type='sawtooth';o.frequency.setValueAtTime(220,ac.currentTime);
+          o.frequency.exponentialRampToValueAtTime(80,ac.currentTime+0.2);
+          g.gain.setValueAtTime(0.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.25);
+          o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+0.3);
+        }catch(e){}
+      }
+    }
     // Combo automático: segurar soco encadeia golpes (punch→elbow→punch→heavy)
     if(input.punch&&!this._isBusy()&&this.stamina>=8){
       this.stamina-=8;this.setState(STATES.PUNCH);playHit('whoosh');
@@ -4100,11 +4618,13 @@ class Fighter{
   regenStamina(r){this.stamina=Math.min(this.maxStamina,this.stamina+r*60);}
   physicsStep(dt){
     if(this.state===STATES.KO){
+      // Fica em pé no chão (mole, sem cair)
       if(!this.isGrounded)this.vel.y+=GRAVITY*dt;
       this.pos.x+=this.vel.x*dt;this.pos.y+=this.vel.y*dt;
       if(this.pos.y<=FLOOR_Y){this.pos.y=FLOOR_Y;this.vel.y=0;this.isGrounded=true;}
       this.pos.x=Math.max(ARENA_X_MIN,Math.min(ARENA_X_MAX,this.pos.x));
-      this.vel.x*=0.7;
+      this.vel.x*=0.85;
+      this.vel.y*=0.9;
       return;
     }
     if(!this.isGrounded)this.vel.y+=GRAVITY*dt;
@@ -4227,6 +4747,43 @@ class Fighter{
         this.root.position.y=FIGHTER_GROUND_Y+Math.sin(p*Math.PI)*0.4;
         this.root.rotation.y+=(this.teleportDir>0?1:-1)*dt*12;
         if(p>=1){this.setState(STATES.IDLE);this.root.rotation.y=0;this.root.position.y=FIGHTER_GROUND_Y;}
+        break;
+      }
+      case STATES.HOOK:{
+        const DUR=0.55;const p=this.stateTime/DUR;const sys=this.id===1?sys1:sys2;
+        if(p<0.25){
+          // Puxa o braço para trás
+          const w=p/0.25;
+          this.armPivotR.rotation.x=w*0.9;
+          this.armPivotR.rotation.z=-w*0.4;
+          this.armPivotR.position.z=-w*0.3;
+          this.torso.rotation.y=w*0.4;
+          this.root.position.y=(typeof FIGHTER_GROUND_Y!=='undefined'?FIGHTER_GROUND_Y:1.1)-w*0.06;
+        } else if(p<0.4){
+          // Lança o gancho
+          const w=(p-0.25)/0.15;
+          this.armPivotR.rotation.x=0.9-w*2.5;
+          this.armPivotR.rotation.z=-0.4+w*0.3;
+          this.armPivotR.position.z=-0.3+w*0.9;
+          this.torso.rotation.y=0.4-w*0.7;
+          if(!this.specialFired){
+            this.specialFired=true;
+            createHookProjectile(this);
+            playHit('special');
+            flashScreen(0.2, hexStr(this.ch.c1));
+          }
+        } else {
+          this.armPivotR.rotation.x+=(-0.8-this.armPivotR.rotation.x)*0.2;
+          this.armPivotR.position.z*=0.85;
+          this.torso.rotation.y*=0.85;
+          this.root.position.y+=((typeof FIGHTER_GROUND_Y!=='undefined'?FIGHTER_GROUND_Y:1.1)-this.root.position.y)*0.15;
+          if(p>=1){
+            this.setState(STATES.IDLE);
+            this.torso.rotation.y=0;
+            this.armPivotR.position.z=0;
+            this.root.position.y=(typeof FIGHTER_GROUND_Y!=='undefined'?FIGHTER_GROUND_Y:1.1);
+          }
+        }
         break;
       }
       case STATES.PUNCH:{
@@ -4378,7 +4935,31 @@ class Fighter{
         else{this.root.position.y+=(FIGHTER_GROUND_Y-this.root.position.y)*0.12;this.armPivotL.rotation.x*=0.88;this.armPivotR.rotation.x*=0.88;this.armPivotL.rotation.z+=(-0.15-this.armPivotL.rotation.z)*0.1;this.armPivotR.rotation.z+=(0.15-this.armPivotR.rotation.z)*0.1;this.armPivotL.position.z*=0.85;this.armPivotR.position.z*=0.85;this.torso.rotation.x*=0.88;this.torso.rotation.y*=0.88;this.legPivotL.rotation.x*=0.88;this.legPivotR.rotation.x*=0.88;this.head.rotation.x*=0.88;if(s>=1.0){this.setState(STATES.IDLE);this.torso.rotation.x=0;this.torso.rotation.y=0;this.torso.rotation.z=0;this.head.rotation.x=0;this.root.rotation.z=0;this.root.position.y=FIGHTER_GROUND_Y;this.armPivotL.position.z=0;this.armPivotR.position.z=0;}}
         break;
       }
-      case STATES.KO:{this.root.rotation.z+=(1.5-this.root.rotation.z)*0.05;this.root.position.y=Math.max(this.root.position.y-0.05,0.2);break;}
+      case STATES.KO:{
+        // Em pé, mas mole / sem forças
+        const t=performance.now()*0.001;
+        const groundY=(typeof FIGHTER_GROUND_Y!=='undefined'?FIGHTER_GROUND_Y:1.1);
+        this.root.position.y+=(groundY-0.12-this.root.position.y)*0.08; // leve afundado
+        this.root.rotation.z+=(Math.sin(t*1.2)*0.06-this.root.rotation.z)*0.06; // balança mole
+        this.root.rotation.x+=(-0.12-this.root.rotation.x)*0.08; // inclina um pouco pra frente
+        // Cabeça caída
+        this.head.rotation.x+=(0.55-this.head.rotation.x)*0.1;
+        this.head.rotation.z+=(Math.sin(t*0.9)*0.08-this.head.rotation.z)*0.08;
+        // Braços pendurados moles
+        this.armPivotL.rotation.x+=(1.35-this.armPivotL.rotation.x)*0.1;
+        this.armPivotR.rotation.x+=(1.35-this.armPivotR.rotation.x)*0.1;
+        this.armPivotL.rotation.z+=(-0.15+Math.sin(t*1.1)*0.1-this.armPivotL.rotation.z)*0.1;
+        this.armPivotR.rotation.z+=(0.15+Math.sin(t*1.3)*0.1-this.armPivotR.rotation.z)*0.1;
+        this.armPivotL.position.z*=0.9;
+        this.armPivotR.position.z*=0.9;
+        // Pernas frouxas
+        this.legPivotL.rotation.x+=(0.15+Math.sin(t*0.7)*0.04-this.legPivotL.rotation.x)*0.08;
+        this.legPivotR.rotation.x+=(-0.1+Math.sin(t*0.8)*0.04-this.legPivotR.rotation.x)*0.08;
+        // Torso caído
+        this.torso.rotation.x+=(0.2-this.torso.rotation.x)*0.08;
+        this.torso.rotation.z+=(Math.sin(t*0.6)*0.05-this.torso.rotation.z)*0.08;
+        break;
+      }
     }
     // Só amortece posição Z dos braços quando não está atacando
     if(!this._isBusy()&&this.state!==STATES.BLOCK){
@@ -4430,6 +5011,16 @@ function showComboPattern(name,fighter,pattern){
     el.style.textShadow=`0 0 20px #${fighter.ch.c1.toString(16).padStart(6,'0')}`;
   }
 }
+
+// ══════════════════════════════════════════════════════
+//  BRUTALITY MID-FIGHT — ativa ao atingir 13 hits de combo
+// ══════════════════════════════════════════════════════
+let brutalityActive = false;
+function triggerBrutality(atk, vic){
+  // BRUTALITY removido
+  return;
+}
+
 function checkCombat(){
   [[p1,p2],[p2,p1]].forEach(([atk,vic])=>{
     if(atk.hitCooldown>0){atk.hitCooldown-=1/60;return;}
@@ -4472,10 +5063,45 @@ function checkCombat(){
     atk.superMeter=Math.min(MAX_SUPER,atk.superMeter+(isBlocked?8:22));vic.superMeter=Math.min(MAX_SUPER,vic.superMeter+(isBlocked?12:10));
     updateSuperBar(atk);updateSuperBar(vic);
     const sys=atk===p1?sys1:sys2;if(hitPoint)spawnP(sys,hitPoint.x,hitPoint.y,hitPoint.z,isBlocked?6:14,'hit');
+    // ═══ SANGUE CLÁSSICO MORTAL KOMBAT em todo hit ═══
+    if(!isBlocked && hitPoint && typeof bloodBurst3D==='function'){
+      const bloodAmt = attackType==='heavy'||attackType==='uppercut' ? 28 : (attackType==='kick'||attackType==='sweep' ? 20 : 14);
+      bloodBurst3D(vic, 0.9 + Math.random()*0.4, bloodAmt, '#bb0000');
+      if(attackType==='heavy'||attackType==='uppercut'){
+        bloodBurst3D(vic, 1.1, 10, '#8b0000');
+      }
+    } else if(!isBlocked && hitPoint && typeof spawnBloodParticles==='function'){
+      const sx = (hitPoint.x / 20 + 0.5) * innerWidth;
+      const sy = ((-hitPoint.y / 12) + 0.55) * innerHeight;
+      const bloodAmt = attackType==='heavy'||attackType==='uppercut' ? 28 : (attackType==='kick'||attackType==='sweep' ? 20 : 14);
+      spawnBloodParticles(sx + (Math.random()-0.5)*40, sy + (Math.random()-0.5)*30, bloodAmt, '#bb0000', 'spray');
+      if(Math.random()<0.4) spawnBloodParticles(sx, sy, 8, '#660000', 'mist');
+      if(Math.random()<0.25) spawnArterialSpray(sx, sy, atk.facing, '#cc0000');
+      if(typeof startBloodAnimation==='function') startBloodAnimation();
+    }
     shakeCamera=isBlocked?0.08:0.22;showDmgPopup(hitPoint,Math.round(dmg),isBlocked,false);
     flashScreen(isBlocked?0.08:0.2,hexStr(atk.ch.c1));playHit(hitType);
-    if(!isBlocked){currentComboOwner=atk.id;comboFadeTimer=2.5;updateComboHUD(atk.combo);}
+    if(!isBlocked){
+      currentComboOwner=atk.id;comboFadeTimer=2.5;updateComboHUD(atk.combo);
+      if(vic.tookDamage===undefined)vic.tookDamage=true; vic.tookDamage=true;
+
+    }
+    // ═══ EASTER EGG CLÁSSICO MK: TOASTY! ═══
+    if(!isBlocked && attackType==='uppercut' && Math.random()<0.12){
+      setTimeout(()=>{
+        showAnnounce('TOASTY!','🔥',1200);
+        try{
+          const ac=getAudio();
+          const o=ac.createOscillator(),g=ac.createGain();
+          o.type='square';o.frequency.setValueAtTime(880,ac.currentTime);
+          o.frequency.exponentialRampToValueAtTime(440,ac.currentTime+0.15);
+          g.gain.setValueAtTime(0.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.4);
+          o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+0.45);
+        }catch(e){}
+      },180);
+    }
     updateHPBar(vic);updateStaminaBar(p1);updateStaminaBar(p2);
+    // KO normal só se NÃO estiver em brutality
     if(vic.hp<=0&&vic.state!==STATES.KO){vic.setState(STATES.KO,true);endRound(atk.id);}
   });
 }
@@ -4497,25 +5123,62 @@ function showSpecialCharge(fighter,progress){
 function showDmgPopup(pos,dmg,blocked,isSuper){
   if(!pos)return;const v=new THREE.Vector3(pos.x,pos.y,pos.z).project(camera);const x=(v.x*0.5+0.5)*innerWidth,y=(-v.y*0.5+0.5)*innerHeight;const el=document.createElement('div');el.className='dmg-popup';el.textContent=blocked?`${dmg} BLOCK`:isSuper?`💥${dmg}!!`:dmg;const size=isSuper?52:blocked?14:32;const color=isSuper?'#ffd600':blocked?'#aaa':'#fff';el.style.cssText=`left:${x-20}px;top:${y}px;color:${color};font-size:${size}px`;document.getElementById('canvas-container').appendChild(el);setTimeout(()=>el.remove(),1000);
 }
-function updateComboHUD(count){const el=document.getElementById('combo-display');document.getElementById('combo-count').textContent=count;document.getElementById('combo-hits').textContent=count>1?`${count} HITS`:'';if(count>=2){el.style.opacity=1;const cols=['#fff','#00e5ff','#ffd600','#ff9100','#ff1744','#e040fb'];document.getElementById('combo-count').style.color=cols[Math.min(count-1,cols.length-1)];document.getElementById('combo-count').style.textShadow=`0 0 30px ${cols[Math.min(count-1,cols.length-1)]}`;}else el.style.opacity=0;}
+function updateComboHUD(count){
+  const el=document.getElementById('combo-display');
+  document.getElementById('combo-count').textContent=count;
+  document.getElementById('combo-hits').textContent=count>1?`${count} HITS`:'';
+  if(count>=2){
+    el.style.opacity=1;
+    const cols=['#fff','#00e5ff','#ffd600','#ff9100','#ff1744','#e040fb'];
+    const col = count>=13 ? '#ffd600' : cols[Math.min(count-1,cols.length-1)];
+    document.getElementById('combo-count').style.color=col;
+    document.getElementById('combo-count').style.textShadow=`0 0 30px ${col}`;
+
+  } else el.style.opacity=0;
+}
 function showAnnounce(text,sub='',duration=2500){const el=document.getElementById('msg');document.getElementById('msg-text').textContent=text;document.getElementById('msg-sub').textContent=sub;el.style.display='block';setTimeout(()=>el.style.display='none',duration);}
 function showRoundAnnounce(text){const el=document.getElementById('round-announce');document.getElementById('round-announce-text').textContent=text;el.style.display='block';setTimeout(()=>el.style.display='none',1600);}
 // ══════════════════════════════════════════════════════
 //  ROUNDS
 // ══════════════════════════════════════════════════════
-function startRound(r){round=r;roundActive=false;gameOver=false;document.getElementById('timer').textContent='99';document.getElementById('timer').classList.remove('urgent');showRoundAnnounce(`ROUND ${r}`);playMenu('round');setTimeout(()=>{showRoundAnnounce('FIGHT!');playMenu('fight');roundActive=true;startTimer();},1800);}
+function startRound(r){round=r;roundActive=false;gameOver=false;document.getElementById('timer').textContent='99';document.getElementById('timer').classList.remove('urgent');
+  // Estilo clássico Mortal Kombat: ROUND X ... FIGHT!
+  showRoundAnnounce(`ROUND ${r}`);playMenu('round');
+  setTimeout(()=>{
+    showRoundAnnounce('FIGHT!');
+    playMenu('fight');
+    // Flash vermelho clássico no início do round
+    flashScreen(0.35,'#ff2200');
+    roundActive=true;startTimer();
+  },1800);
+}
 function startTimer(){countdownTimer=99;if(timerInterval)clearInterval(timerInterval);timerInterval=setInterval(()=>{if(!roundActive)return;countdownTimer--;const tel=document.getElementById('timer');tel.textContent=countdownTimer;tel.classList.toggle('urgent',countdownTimer<=10);if(countdownTimer<=0){clearInterval(timerInterval);timeOutRound();}},1000);}
 function timeOutRound(){roundActive=false;const w=p1.hp>=p2.hp?1:2;showAnnounce('TIME!',`${w===1?p1.ch.name:p2.ch.name} vence por HP!`,2000);roundWins[w]++;updateRoundPips();checkMatchEnd(w,'time');}
-function endRound(wid){
+function endRound(wid, reason){
   if(!roundActive)return;
   roundActive=false;clearInterval(timerInterval);
   roundWins[wid]++;updateRoundPips();
   playMenu('ko');
+  const winnerF = wid===1 ? p1 : p2;
+  const finishCombo = winnerF ? (winnerF.combo || 0) : 0;
+  fatalityState.finishCombo = finishCombo;
+  // Se já foi brutality mid-fight, mantém; senão não força
+  // brutality removido
+  fatalityState.isBrutality = false;
+  comboFadeTimer = 99;
+  const isFlawless = !(winnerF && winnerF.tookDamage);
   const winsNeeded = Math.ceil(maxRounds/2);
   const isMatchOver = (roundWins[wid] >= winsNeeded);
+  const wasBrutality = fatalityState.isBrutality || reason === 'brutality';
+  const mkPhrases = isFlawless ? ['FLAWLESS VICTORY!','PERFEITO!','OUTSTANDING!'] : 
+                    (wasBrutality ? ['BRUTALITY!','DEVASTATING!','EXCELLENT!'] : 
+                    ['K.O.!','EXCELLENT!','WELL DONE!']);
+  const phrase = mkPhrases[Math.floor(Math.random()*mkPhrases.length)];
   if(isMatchOver) {
+    // Final da luta → sempre oferece FATALITY (código). Se já foi brutality, ainda oferece fatality.
+    fatalityState.isBrutality = false; // Fatality no final, não auto-brutality
     setTimeout(()=>{
-      showAnnounce('K.O.!','',1600);
+      showAnnounce(wasBrutality ? 'BRUTALITY!' : phrase, isFlawless ? 'FLAWLESS' : '',1600);
     }, 200);
     setTimeout(()=>{
       const hitFlash = document.getElementById('hit-flash');
@@ -4526,10 +5189,11 @@ function endRound(wid){
       showFatalityPrompt(wid);
     }, 1800);
   } else {
+    // Round intermediário
     setTimeout(()=>{
-      showAnnounce('K.O.',`${wid===1?p1.ch.name:p2.ch.name} vence!`,2000);
-      checkMatchEnd(wid,'ko');
-    },400);
+      showAnnounce(wasBrutality ? 'BRUTALITY!' : phrase, `${wid===1?p1.ch.name:p2.ch.name} vence!`,2000);
+      checkMatchEnd(wid, wasBrutality ? 'brutality' : 'ko');
+    }, wasBrutality ? 2200 : 400);
   }
 }
 function updateRoundPips(){for(let pid=1;pid<=2;pid++)for(let w=0;w<2;w++){const pip=document.getElementById(`p${pid}-pip-${w}`);if(pip)pip.classList.toggle('won',w<roundWins[pid]);}}
@@ -4539,10 +5203,17 @@ function checkMatchEnd(lw,reason){
 }
 function showWinnerScreen(wid,reason){
   const ch=wid===1?p1.ch:p2.ch;
-  document.getElementById('winner-icon').textContent = reason==='fatality' ? '💀' : ch.icon;
-  document.getElementById('winner-title').textContent = ch.name+' VENCE!';
+  const winnerF = wid===1 ? p1 : p2;
+  const isFlawless = !(winnerF.tookDamage);
+  document.getElementById('winner-icon').textContent = (reason==='fatality'||reason==='brutality') ? '💀' : (isFlawless ? '👑' : ch.icon);
+  document.getElementById('winner-title').textContent = ch.name+' WINS';
   document.getElementById('winner-title').style.color='#'+ch.c1.toString(16).padStart(6,'0');
-  const sub = reason==='fatality' ? '☠ FATALITY — '+ch.fatalityName+' ☠' : reason==='ko'?'VITÓRIA POR K.O.':'VITÓRIA POR PONTOS';
+  let sub;
+  if(reason==='brutality') sub = '★ BRUTALITY — '+ch.fatalityName+' ★';
+  else if(reason==='fatality') sub = '☠ FATALITY — '+ch.fatalityName+' ☠';
+  else if(isFlawless) sub = '★ FLAWLESS VICTORY ★';
+  else if(reason==='ko') sub = 'VITÓRIA POR K.O.';
+  else sub = 'VITÓRIA POR PONTOS';
   document.getElementById('winner-screen').querySelector('.winner-sub').textContent=sub;
   document.getElementById('winner-score').innerHTML=`<span style="color:#00e5ff">${p1.ch.icon} ${roundWins[1]}</span><span style="color:rgba(255,255,255,0.3)">—</span><span style="color:#ff6600">${roundWins[2]} ${p2.ch.icon}</span>`;
   document.getElementById('winner-screen').classList.add('show');
@@ -4551,16 +5222,21 @@ function resetFighters(){
   [p1,p2].forEach((f,i)=>{
     f.hp=f.maxHp;f.stamina=f.maxStamina;f.superMeter=0;f.combo=0;f.state=STATES.IDLE;f.stateTime=0;f.specialFired=false;
     f.comboSequence=[];f.comboTimer=0;f.comboMultiplier=1.0;f.currentComboPattern=null;
+    f.tookDamage=false;f.hookUses=f.maxHookUses||2;f.hookCooldown=0;
     f.pos.set(i===0?-5:5,FLOOR_Y,0);f.vel.set(0,0,0);f.isGrounded=true;f.facing=i===0?1:-1;
     f.root.rotation.set(0,0,0);f.root.position.set(0,FIGHTER_GROUND_Y,0);
     f.auraRing.material.opacity=0.6;f.auraRing2.material.opacity=0.45;
     updateHPBar(f);updateStaminaBar(f);updateSuperBar(f);
     document.getElementById(`hp${f.id}-ghost`).style.width='100%';
   });
-  fatalityState.active=false;fatalityState.executed=false;fatalityState.wasLastRound=false;
-  bloodParticles=[];
+  fatalityState.active=false;fatalityState.executed=false;fatalityState.wasLastRound=false;fatalityState.isBrutality=false;fatalityState.finishCombo=0;
+  brutalityActive=false;
+  if(typeof clearBlood==='function')clearBlood();else{bloodParticles=[];}
   const hitFlash=document.getElementById('hit-flash');hitFlash.style.opacity='0';hitFlash.style.transition='';
   document.getElementById('fatality-overlay').classList.remove('active');
+  const tw=document.getElementById('fatality-text-wrap');if(tw)tw.classList.remove('show');
+  const vig=document.getElementById('fatality-vignette');if(vig)vig.classList.remove('active');
+  const wordEl=document.getElementById('fatality-word');if(wordEl){wordEl.classList.remove('brutality');wordEl.textContent='FATALITY';}
   document.getElementById('fatality-input-ui').classList.remove('visible');
   document.getElementById('fatality-announce').classList.remove('show');
 }
@@ -4594,7 +5270,8 @@ function getInput(pid){
     sweep:keys['KeyB']||(gp?.buttons[7]?.pressed),
     uppercut:keys['KeyC']||(gp?.buttons[11]?.pressed)||(gp?.buttons[9]?.pressed),
     elbow:keys['KeyF']||(gp?.buttons[8]?.pressed),
-    teleport:keys['KeyT']||(gp?.buttons[10]?.pressed)
+    teleport:keys['KeyT']||(gp?.buttons[10]?.pressed),
+    hook:keys['KeyH']||keys['KeyY']
   };
   return{
     left:keys['ArrowLeft']||(gp?.axes[0]<-0.35)||(gp?.buttons[14]?.pressed),
@@ -4609,7 +5286,8 @@ function getInput(pid){
     sweep:keys['KeyM']||(gp?.buttons[7]?.pressed),
     uppercut:keys['KeyU']||(gp?.buttons[11]?.pressed)||(gp?.buttons[9]?.pressed),
     elbow:keys['KeyK']||(gp?.buttons[8]?.pressed),
-    teleport:keys['Semicolon']||(gp?.buttons[10]?.pressed)
+    teleport:keys['Semicolon']||(gp?.buttons[10]?.pressed),
+    hook:keys['KeyN']||keys['Comma']
   };
 }
 // ══════════════════════════════════════════════════════
@@ -4644,7 +5322,7 @@ function gameLoop(ts){
     });
   }
   updateSys(sys1,dt);updateSys(sys2,dt);
-  if(comboFadeTimer>0){comboFadeTimer-=rawDt;if(comboFadeTimer<=0){document.getElementById('combo-display').style.opacity=0;if(currentComboOwner===1)p1.combo=0;else p2.combo=0;}}
+  if(comboFadeTimer>0 && !fatalityState.active && !fatalityState.executed){comboFadeTimer-=rawDt;if(comboFadeTimer<=0){document.getElementById('combo-display').style.opacity=0;if(currentComboOwner===1)p1.combo=0;else p2.combo=0;}}
   const midX=(p1.pos.x+p2.pos.x)/2,dist=Math.abs(p1.pos.x-p2.pos.x);
   if(superCam){
     const sc=superCam;sc.time+=rawDt;const prog=Math.min(sc.time/sc.duration,1);
@@ -4684,7 +5362,7 @@ function startGame(){
   document.getElementById('st2-fill').style.background=ch2.stColor;
   round=1;roundWins={1:0,2:0};projectiles=[];comboFadeTimer=0;superCam=null;
   bloodParticles=[];
-  fatalityState={active:false,winner:null,loser:null,sequence:[],progress:0,timeLeft:6,timerInterval:null,executed:false,available:false,wasLastRound:false};
+  fatalityState={active:false,winner:null,loser:null,sequence:[],progress:0,timeLeft:8,timerInterval:null,executed:false,available:false,wasLastRound:false,isBrutality:false,finishCombo:0};
   document.getElementById('select-screen').classList.add('hidden');
   gpSelect.active=false;
   const cont=document.getElementById('canvas-container');cont.classList.add('visible');
@@ -4695,9 +5373,11 @@ function startGame(){
     sys1=makeParticleSys(ch1);sys2=makeParticleSys(ch2);
     p1=new Fighter({x:-5,ch:ch1,id:1,facing:1});
     p2=new Fighter({x:5,ch:ch2,id:2,facing:-1});
+    p1.tookDamage=false; p2.tookDamage=false;
     p1.opponent=p2;p2.opponent=p1;
     renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
     lastTime=0;requestAnimationFrame(gameLoop);startRound(1);
+    if(typeof startBloodAnimation==='function') startBloodAnimation();
   });
 }
 document.getElementById('back-btn').addEventListener('click',()=>location.reload());
