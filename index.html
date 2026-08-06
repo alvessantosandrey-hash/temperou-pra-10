@@ -15,6 +15,11 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
 .select-top{display:flex;align-items:center;justify-content:center;padding:10px 16px 4px;gap:16px;flex-shrink:0;}
 .select-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,5vw,52px);letter-spacing:10px;background:linear-gradient(90deg,#00e5ff 0%,#ffffff 45%,#ff6600 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 20px rgba(0,200,255,0.35));}
 .select-subtitle{font-size:11px;letter-spacing:5px;color:rgba(255,255,255,0.22);text-transform:uppercase;text-align:center;margin-bottom:6px;}
+.mode-row{display:flex;justify-content:center;gap:10px;margin:4px 0 8px;flex-shrink:0;}
+.mode-btn{font-family:'Bebas Neue',sans-serif;font-size:clamp(12px,1.6vw,16px);letter-spacing:3px;padding:6px 18px;border:2px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.4);color:rgba(255,255,255,0.45);cursor:pointer;border-radius:4px;transition:all 0.2s;}
+.mode-btn:hover{border-color:rgba(255,255,255,0.5);color:#fff;}
+.mode-btn.active{border-color:#ffd600;color:#ffd600;background:rgba(255,214,0,0.12);box-shadow:0 0 16px rgba(255,214,0,0.25);}
+.mode-btn.active.cpu{border-color:#00e5ff;color:#00e5ff;background:rgba(0,229,255,0.1);box-shadow:0 0 16px rgba(0,229,255,0.25);}
 /* Layout principal estilo MKX: P1 | GRID | P2 */
 .select-panels{display:flex;flex:1;min-height:0;width:100%;align-items:stretch;padding:0 8px 8px;gap:8px;}
 .select-panel{flex:0 0 clamp(140px,22vw,280px);display:flex;flex-direction:column;position:relative;overflow:hidden;border-radius:4px;}
@@ -353,6 +358,10 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
       <div class="select-title">IRON FIST 3D</div>
     </div>
     <div class="select-subtitle">SELECIONE SEU GUERREIRO</div>
+    <div class="mode-row" id="mode-row">
+      <button class="mode-btn active" id="mode-2p" type="button">👥 2 JOGADORES</button>
+      <button class="mode-btn" id="mode-1p" type="button">🤖 1P vs CPU</button>
+    </div>
     <div class="select-panels">
       <div class="select-panel" id="p1-panel">
         <div class="panel-label">⬡ PLAYER 1</div>
@@ -367,7 +376,7 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
             <div class="preview-desc">Clique ou use o controle 1</div>
           </div>
         </div>
-        <div class="panel-hint">🎮1 · WASD SPACE V Q E R T H</div>
+        <div class="panel-hint">🎮1 · WASD SPACE V Q E R T H · USB: todos os golpes</div>
       </div>
       <div class="grid-wrap">
         <div class="char-grid" id="char-grid"></div>
@@ -376,7 +385,7 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
         <button class="start-btn" id="start-btn" disabled>⚔ FIGHT</button>
       </div>
       <div class="select-panel" id="p2-panel">
-        <div class="panel-label">PLAYER 2 ⬡</div>
+        <div class="panel-label" id="p2-panel-label">PLAYER 2 ⬡</div>
         <div class="preview-box" id="p2-preview">
           <div class="preview-stage">
             <div class="preview-figure" id="p2-figure"></div>
@@ -388,7 +397,7 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
             <div class="preview-desc">Clique direito ou controle 2</div>
           </div>
         </div>
-        <div class="panel-hint">🎮2 · ↑←→ L . P O I ; N</div>
+        <div class="panel-hint">🎮2 · ↑←→↓ L . P O I ; N · USB 2: mesmos botões</div>
       </div>
     </div>
   </div>
@@ -550,14 +559,14 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
       <span class="ctrl-key">SPACE</span> Soco &nbsp;<span class="ctrl-key">V</span> Chute &nbsp;<span class="ctrl-key">Q</span> Defesa<br>
       <span class="ctrl-key">F</span> Cotovelo &nbsp;<span class="ctrl-key">C</span> Uppercut &nbsp;<span class="ctrl-key">G</span> Soco Pesado<br>
       <span class="ctrl-key">B</span> Rasteira &nbsp;<span class="ctrl-key">E</span> Especial &nbsp;<span class="ctrl-key">R</span> SUPER &nbsp;<span class="ctrl-key">T</span> Teleporte &nbsp;<span class="ctrl-key">H</span> Gancho (2x)<br>
-      <span style="color:rgba(0,229,255,0.7)">🎮 USB: A=Pular X=Soco(segurar=combo) Y=Chute(segurar=combo) B=Defesa L1=Esp R1=Super L2=Pesado R2=Rasteira Select=Cotovelo Start=Uppercut L3=Teleporte</span>
+      <span style="color:rgba(0,229,255,0.7)">🎮 USB: A=Pular B=Defesa X=Soco(segurar=combo) Y=Chute(segurar=combo) L1=Especial R1=SUPER L2=Pesado R2=Rasteira Select=Cotovelo Start=Uppercut L3=Teleporte R3=Gancho</span>
     </div>
     <div class="ctrl-box" style="text-align:right">
       <span class="ctrl-key">↑</span> Pular &nbsp;<span class="ctrl-key">↓</span> Agachar &nbsp;<span class="ctrl-key">←</span><span class="ctrl-key">→</span> Mover &nbsp;<span class="ctrl-key">←+←</span> Dash<br>
       <span class="ctrl-key">L</span> Soco &nbsp;<span class="ctrl-key">.</span> Chute &nbsp;<span class="ctrl-key">P</span> Defesa<br>
       <span class="ctrl-key">K</span> Cotovelo &nbsp;<span class="ctrl-key">U</span> Uppercut &nbsp;<span class="ctrl-key">J</span> Soco Pesado<br>
       <span class="ctrl-key">M</span> Rasteira &nbsp;<span class="ctrl-key">O</span> Especial &nbsp;<span class="ctrl-key">I</span> SUPER &nbsp;<span class="ctrl-key">;</span> Teleporte &nbsp;<span class="ctrl-key">N</span> Gancho (2x)<br>
-      <span style="color:rgba(255,102,0,0.7)">🎮 P2: mesmo mapeamento no 2º controle · L3=Teleporte</span>
+      <span style="color:rgba(255,102,0,0.7)">🎮 P2: mesmo mapeamento no 2º controle · L3=Teleporte · R3=Gancho</span>
     </div>
   </div>
 </div>
@@ -1436,6 +1445,11 @@ function showFatalityPrompt(winner) {
   setTimeout(()=>faEl.classList.remove('show'), 2400);
   setTimeout(()=>{
     if(!fatalityState.active) return;
+    // CPU venceu: executa fatality automaticamente
+    if(vsCPU && winner === 2){
+      setTimeout(()=>{ if(fatalityState.active && !fatalityState.executed) executeFatality(); }, 1200);
+      return;
+    }
     buildFatalityInputUI(winner);
     const ui = document.getElementById('fatality-input-ui');
     ui.classList.add('visible');
@@ -3196,6 +3210,7 @@ function pollFatalityGamepad(){
 //  CHARACTER SELECTION
 // ══════════════════════════════════════════════════════
 let selected = [null, null];
+let vsCPU = false; // true = Player 1 vs máquina
 // Preload voices for dublador (Web Speech API)
 if(window.speechSynthesis){
   window.speechSynthesis.getVoices();
@@ -3440,9 +3455,35 @@ function updateSelectUI() {
   updatePreview('p1-preview', selected[0], '#00e5ff');
   updatePreview('p2-preview', selected[1], '#ff6600');
   const btn=document.getElementById('start-btn');
-  const ready=selected[0]!==null&&selected[1]!==null;
-  btn.disabled=!ready;
-  btn.classList.toggle('ready',ready);
+  // Em modo CPU basta P1 escolhido (P2 pode ser aleatório ao iniciar)
+  const ready = vsCPU
+    ? (selected[0] !== null)
+    : (selected[0] !== null && selected[1] !== null);
+  btn.disabled = !ready;
+  btn.classList.toggle('ready', ready);
+  const p2lab = document.getElementById('p2-panel-label');
+  if(p2lab) p2lab.textContent = vsCPU ? '⬡ CPU / ADVERSÁRIO' : 'PLAYER 2 ⬡';
+  const hints = document.querySelectorAll('.hint-row');
+  if(hints[0]){
+    hints[0].textContent = vsCPU
+      ? 'CLIQUE = SEU GUERREIRO  |  CLIQUE DIR = ADVERSÁRIO (opcional)  |  RE-CLIQUE = SKIN'
+      : 'CLIQUE ESQ = P1  |  CLIQUE DIR = P2  |  RE-CLIQUE = TROCAR SKIN';
+  }
+}
+
+function setGameMode(cpu){
+  vsCPU = !!cpu;
+  document.getElementById('mode-1p').classList.toggle('active', vsCPU);
+  document.getElementById('mode-1p').classList.toggle('cpu', vsCPU);
+  document.getElementById('mode-2p').classList.toggle('active', !vsCPU);
+  // Limpa só P2 ao trocar modo para evitar confusão
+  if(vsCPU){
+    // mantém seleções; se só P1, ok
+  } else {
+    // 2P precisa dos dois
+  }
+  updateSelectUI();
+  try{ playMenu('hover'); }catch(e){}
 }
 function updatePreview(id, idx, color) {
   const box = document.getElementById(id);
@@ -3451,7 +3492,7 @@ function updatePreview(id, idx, color) {
   box.classList.toggle('p2-active', !isP1 && idx!==null);
   if (idx === null) {
     box.innerHTML = `<div class="preview-stage"><div class="preview-figure" style="opacity:0.15"><div class="fig-head" style="background:#444"></div><div class="fig-torso" style="background:#333"></div><div class="fig-arm-l" style="background:#333"></div><div class="fig-arm-r" style="background:#333"></div><div class="fig-leg-l" style="background:#222"></div><div class="fig-leg-r" style="background:#222"></div></div><div class="preview-floor"></div></div>
-      <div class="preview-info"><div class="preview-name" style="color:${color}">—</div><div class="preview-tag">ESCOLHA</div><div class="preview-desc">${isP1?'Clique ou controle 1':'Clique direito ou controle 2'}</div></div>`;
+      <div class="preview-info"><div class="preview-name" style="color:${color}">—</div><div class="preview-tag">ESCOLHA</div><div class="preview-desc">${isP1?'Clique ou controle 1':(vsCPU?'CPU: clique dir. p/ escolher adversário (ou aleatório)':'Clique direito ou controle 2')}</div></div>`;
     return;
   }
   const ch = CHARACTERS[idx];
@@ -3468,6 +3509,8 @@ function updatePreview(id, idx, color) {
     </div>`;
 }
 buildCharGrid();
+document.getElementById('mode-1p').addEventListener('click', ()=>setGameMode(true));
+document.getElementById('mode-2p').addEventListener('click', ()=>setGameMode(false));
 document.getElementById('start-btn').addEventListener('click', showMapScreen);
 document.getElementById('map-fight-btn').addEventListener('click', ()=>{ if(selectedMap!=null) showVsScreen(); });
 document.getElementById('map-back-btn').addEventListener('click', ()=>{
@@ -3520,7 +3563,7 @@ function gpSelectPoll(){
       selectChar(pid, gpSelect.cursor[pid]);
     }
     // Start / Options (button 9 or 8) to fight when both selected
-    if((gp.buttons[9]?.pressed || gp.buttons[8]?.pressed) && selected[0]!==null && selected[1]!==null && now-gpSelect.lastConfirm[pid]>500){
+    if((gp.buttons[9]?.pressed || gp.buttons[8]?.pressed) && selected[0]!==null && (selected[1]!==null || vsCPU) && now-gpSelect.lastConfirm[pid]>500){
       gpSelect.lastConfirm[pid]=now;
       showMapScreen();
     }
@@ -3614,7 +3657,17 @@ function buildMapGrid(){
 }
 
 function showMapScreen(){
-  if(selected[0]===null||selected[1]===null) return;
+  if(selected[0]===null) return;
+  // Modo CPU: se adversário não escolhido, sorteia (evita o mesmo personagem se possível)
+  if(vsCPU && selected[1]===null){
+    let pool = CHARACTERS.map((_,i)=>i).filter(i=>i!==selected[0]);
+    if(!pool.length) pool = CHARACTERS.map((_,i)=>i);
+    selected[1] = pool[Math.floor(Math.random()*pool.length)];
+    const ch = CHARACTERS[selected[1]];
+    if(ch) applySkin(ch, Math.floor(Math.random()*((ch.skins&&ch.skins.length)||1)));
+    updateSelectUI();
+  }
+  if(selected[1]===null) return;
   playMenu('select');
   document.getElementById('select-screen').classList.add('hidden');
   gpSelect.active = false;
@@ -3696,7 +3749,7 @@ function showVsScreen() {
   document.getElementById('vs-tag1').textContent = ch1.tag;
   document.getElementById('vs-icon2').textContent = ch2.icon;
   document.getElementById('vs-name2').textContent = ch2.name;
-  document.getElementById('vs-tag2').textContent = ch2.tag;
+  document.getElementById('vs-tag2').textContent = vsCPU ? ('CPU · ' + ch2.tag) : ch2.tag;
   document.getElementById('vs-left').style.background = `linear-gradient(135deg,${hexStr(ch1.c1,0.15)} 0%,#000 60%)`;
   document.getElementById('vs-right').style.background = `linear-gradient(225deg,${hexStr(ch2.c1,0.15)} 0%,#000 60%)`;
   const vs = document.getElementById('vs-screen');
@@ -5278,49 +5331,199 @@ window.addEventListener('keydown',e=>{
   }
 });
 window.addEventListener('keyup',e=>{keys[e.code]=false;});
-function getInput(pid){
-  const gps=navigator.getGamepads?navigator.getGamepads():[];const gp=gps[pid-1];
-  // Gamepad: 0=A/X jump, 1=B/O block, 2=X/□ punch, 3=Y/△ kick,
-  // 4=L1 special, 5=R1 super, 6=L2 heavy, 7=R2 sweep, 10=L3 teleport, 11=R3 uppercut
-  // elbows via buttons[8]/[9] or keys; USB controllers plug & play via Gamepad API
-  if(pid===1)return{
-    left:keys['KeyA']||(gp&&gp.axes&&gp.axes[0]<-0.35)||(gp&&gp.buttons&&gp.buttons[14]&&gp.buttons[14].pressed),
-    right:keys['KeyD']||(gp&&gp.axes&&gp.axes[0]>0.35)||(gp&&gp.buttons&&gp.buttons[15]&&gp.buttons[15].pressed),
-    crouch:!!(keys['KeyS']||(gp&&gp.axes&&gp.axes[1]>0.55)||(gp&&gp.buttons&&gp.buttons[13]&&gp.buttons[13].pressed)),
-    jump:keys['KeyW']||(gp&&gp.buttons&&gp.buttons[0]&&gp.buttons[0].pressed)||(gp&&gp.buttons&&gp.buttons[12]&&gp.buttons[12].pressed),
-    punch:keys['Space']||(gp?.buttons[2]?.pressed),
-    kick:keys['KeyV']||(gp?.buttons[3]?.pressed),
-    block:keys['KeyQ']||(gp?.buttons[1]?.pressed),
-    special:keys['KeyE']||(gp?.buttons[4]?.pressed),
-    superKey:keys['KeyR']||(gp?.buttons[5]?.pressed),
-    heavy:keys['KeyG']||(gp?.buttons[6]?.pressed),
-    sweep:keys['KeyB']||(gp?.buttons[7]?.pressed),
-    uppercut:keys['KeyC']||(gp?.buttons[11]?.pressed)||(gp?.buttons[9]?.pressed),
-    elbow:keys['KeyF']||(gp?.buttons[8]?.pressed),
-    teleport:keys['KeyT']||(gp?.buttons[10]?.pressed),
-    hook:keys['KeyH']||keys['KeyY']
-  };
-  return{
-    left:keys['ArrowLeft']||(gp&&gp.axes&&gp.axes[0]<-0.35)||(gp&&gp.buttons&&gp.buttons[14]&&gp.buttons[14].pressed),
-    right:keys['ArrowRight']||(gp&&gp.axes&&gp.axes[0]>0.35)||(gp&&gp.buttons&&gp.buttons[15]&&gp.buttons[15].pressed),
-    crouch:!!(keys['ArrowDown']||(gp&&gp.axes&&gp.axes[1]>0.55)||(gp&&gp.buttons&&gp.buttons[13]&&gp.buttons[13].pressed)),
-    jump:keys['ArrowUp']||(gp&&gp.buttons&&gp.buttons[0]&&gp.buttons[0].pressed)||(gp&&gp.buttons&&gp.buttons[12]&&gp.buttons[12].pressed),
-    punch:keys['KeyL']||(gp?.buttons[2]?.pressed),
-    kick:keys['Period']||(gp?.buttons[3]?.pressed),
-    block:keys['KeyP']||(gp?.buttons[1]?.pressed),
-    special:keys['KeyO']||(gp?.buttons[4]?.pressed),
-    superKey:keys['KeyI']||(gp?.buttons[5]?.pressed),
-    heavy:keys['KeyJ']||(gp?.buttons[6]?.pressed),
-    sweep:keys['KeyM']||(gp?.buttons[7]?.pressed),
-    uppercut:keys['KeyU']||(gp?.buttons[11]?.pressed)||(gp?.buttons[9]?.pressed),
-    elbow:keys['KeyK']||(gp?.buttons[8]?.pressed),
-    teleport:keys['Semicolon']||(gp?.buttons[10]?.pressed),
-    hook:keys['KeyN']||keys['Comma']
+// ══════════════════════════════════════════════════════
+//  AI — máquina (P2) no modo 1P vs CPU
+// ══════════════════════════════════════════════════════
+const aiState = {
+  nextThink: 0,
+  plan: { left:false, right:false, jump:false, crouch:false, punch:false, kick:false, block:false, special:false, superKey:false, heavy:false, sweep:false, uppercut:false, elbow:false, teleport:false, hook:false },
+  aggression: 0.55,
+  reaction: 0.12,
+};
+
+function emptyInput(){
+  return { left:false, right:false, jump:false, crouch:false, punch:false, kick:false, block:false, special:false, superKey:false, heavy:false, sweep:false, uppercut:false, elbow:false, teleport:false, hook:false };
+}
+
+function getAIInput(me, foe){
+  const now = performance.now() * 0.001;
+  const out = emptyInput();
+  if(!me || !foe || me.state === STATES.KO) return out;
+
+  // Reação / atualização do plano em intervalos
+  if(now >= aiState.nextThink){
+    const dist = Math.abs(me.pos.x - foe.pos.x);
+    const facingOk = (foe.pos.x > me.pos.x) ? 1 : -1;
+    const foeAttacking = [STATES.PUNCH, STATES.KICK, STATES.HEAVY, STATES.UPPERCUT, STATES.ELBOW, STATES.SWEEP, STATES.SPECIAL, STATES.SUPER].includes(foe.state);
+    const plan = emptyInput();
+
+    // Bloquear se oponente atacando de perto
+    if(foeAttacking && dist < 3.2 && Math.random() < 0.55){
+      plan.block = true;
+    } else {
+      // Aproximar ou afastar
+      if(dist > 4.5){
+        if(facingOk > 0) plan.right = true; else plan.left = true;
+        if(dist > 8 && me.teleportCooldown <= 0 && me.stamina > 30 && Math.random() < 0.25) plan.teleport = true;
+        if(dist > 6 && me.hookUses > 0 && Math.random() < 0.2) plan.hook = true;
+      } else if(dist < 1.6 && Math.random() < 0.35){
+        // Recuar um pouco
+        if(facingOk > 0) plan.left = true; else plan.right = true;
+      } else {
+        // Em range de luta
+        if(me.superMeter >= MAX_SUPER && Math.random() < 0.45) plan.superKey = true;
+        else if(me.stamina >= 30 && dist < 9 && Math.random() < 0.18) plan.special = true;
+        else if(dist < 2.8){
+          const r = Math.random();
+          if(r < 0.28) plan.punch = true;
+          else if(r < 0.48) plan.kick = true;
+          else if(r < 0.58) plan.elbow = true;
+          else if(r < 0.68) plan.heavy = true;
+          else if(r < 0.78) plan.uppercut = true;
+          else if(r < 0.88) plan.sweep = true;
+          else if(r < 0.93) plan.jump = true;
+          else plan.block = true;
+        } else {
+          // médio alcance: aproximar + ocasional projétil
+          if(facingOk > 0) plan.right = true; else plan.left = true;
+          if(me.stamina >= 30 && Math.random() < 0.22) plan.special = true;
+        }
+      }
+      // Pular ocasionalmente para esquivar
+      if(foeAttacking && dist < 3.5 && Math.random() < 0.2) plan.jump = true;
+      // Agachar contra golpes altos raramente
+      if(foeAttacking && foe.state === STATES.UPPERCUT && Math.random() < 0.35) plan.crouch = true;
+    }
+
+    // Dash ocasional
+    if(dist > 5 && Math.random() < 0.08){
+      // double-tap simulado via applyControl lastDir — apenas direção
+      if(facingOk > 0) plan.right = true; else plan.left = true;
+    }
+
+    aiState.plan = plan;
+    // Intervalo de “pensamento” (mais agressivo = mais rápido)
+    aiState.nextThink = now + (0.08 + Math.random() * 0.18);
+  }
+
+  // Copia plano (botões de ataque são “pulse” — solta após um frame lógico)
+  Object.assign(out, aiState.plan);
+  // Evita segurar ataque infinito: limpa golpes após usar no plano
+  if(out.punch || out.kick || out.heavy || out.uppercut || out.elbow || out.sweep || out.special || out.superKey || out.teleport || out.hook){
+    // Mantém movimento, zera ataques no próximo think mais cedo
+    aiState.nextThink = Math.min(aiState.nextThink, now + 0.15);
+    aiState.plan.punch = aiState.plan.kick = aiState.plan.heavy = false;
+    aiState.plan.uppercut = aiState.plan.elbow = aiState.plan.sweep = false;
+    aiState.plan.special = aiState.plan.superKey = aiState.plan.teleport = aiState.plan.hook = false;
+  }
+  return out;
+}
+
+function gpPressed(gp, i){
+  if(!gp || !gp.buttons || !gp.buttons[i]) return false;
+  const b = gp.buttons[i];
+  return !!(b.pressed || (typeof b.value === 'number' && b.value > 0.35));
+}
+function gpAxis(gp, i){
+  if(!gp || !gp.axes || gp.axes[i] === undefined) return 0;
+  return gp.axes[i] || 0;
+}
+/** Leitura universal USB/Gamepad — todos os golpes mapeados */
+function readGamepad(gp){
+  if(!gp) return null;
+  // Sticks + D-Pad
+  const ax = gpAxis(gp, 0), ay = gpAxis(gp, 1);
+  // Alguns pads expõem L2/R2 só como eixos (2 e 5 no padrão Xbox / Chrome)
+  const l2axis = Math.max(0, gpAxis(gp, 2), gpAxis(gp, 3) > 0.5 ? gpAxis(gp, 3) : 0);
+  const r2axis = Math.max(0, gpAxis(gp, 5), (gp.axes.length > 4 ? Math.max(0, gpAxis(gp, 4)) : 0));
+  // Fallback: em alguns navegadores LT/RT = axes[2] de -1..1
+  let lt = gpPressed(gp, 6) || l2axis > 0.4;
+  let rt = gpPressed(gp, 7) || r2axis > 0.4;
+  if(!lt && gp.axes && gp.axes.length >= 3){
+    // eixo 2 às vezes é -1 (solto) .. +1 (pressionado)
+    const a2 = gpAxis(gp, 2);
+    if(a2 > 0.45) lt = true;
+  }
+  if(!rt && gp.axes && gp.axes.length >= 6){
+    const a5 = gpAxis(gp, 5);
+    if(a5 > 0.45) rt = true;
+  }
+  return {
+    left:  ax < -0.35 || gpPressed(gp, 14),
+    right: ax >  0.35 || gpPressed(gp, 15),
+    crouch: ay > 0.55 || gpPressed(gp, 13),
+    // A / D-Pad cima = pular
+    jump: gpPressed(gp, 0) || gpPressed(gp, 12),
+    // X = soco | Y = chute | B = defesa
+    punch: gpPressed(gp, 2),
+    kick:  gpPressed(gp, 3),
+    block: gpPressed(gp, 1),
+    // L1 especial | R1 super
+    special:  gpPressed(gp, 4),
+    superKey: gpPressed(gp, 5),
+    // L2 pesado | R2 rasteira
+    heavy: lt,
+    sweep: rt,
+    // Select/Back = cotovelo | Start = uppercut
+    elbow:    gpPressed(gp, 8),
+    uppercut: gpPressed(gp, 9),
+    // L3 teleporte | R3 gancho
+    teleport: gpPressed(gp, 10),
+    hook:     gpPressed(gp, 11),
   };
 }
-// ══════════════════════════════════════════════════════
-//  SUPER CAM
-// ══════════════════════════════════════════════════════
+function getInput(pid){
+  // Modo CPU: P2 controlado pela IA
+  if(vsCPU && pid === 2 && p2 && p1){
+    return getAIInput(p2, p1);
+  }
+  const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+  const gp = gps[pid - 1];
+  const g = readGamepad(gp);
+  // Mapeamento USB universal (Xbox / DirectInput / generico):
+  //  A(0) Pular   B(1) Defesa   X(2) Soco   Y(3) Chute
+  //  L1(4) Especial   R1(5) SUPER
+  //  L2(6) Soco Pesado   R2(7) Rasteira
+  //  Select(8) Cotovelo   Start(9) Uppercut
+  //  L3(10) Teleporte   R3(11) Gancho
+  //  Stick/D-Pad mover · ↓ agachar · ↑ pular
+  if(pid === 1){
+    return {
+      left:  !!(keys['KeyA'] || (g && g.left)),
+      right: !!(keys['KeyD'] || (g && g.right)),
+      crouch:!!(keys['KeyS'] || (g && g.crouch)),
+      jump:  !!(keys['KeyW'] || (g && g.jump)),
+      punch: !!(keys['Space'] || (g && g.punch)),
+      kick:  !!(keys['KeyV'] || (g && g.kick)),
+      block: !!(keys['KeyQ'] || (g && g.block)),
+      special:  !!(keys['KeyE'] || (g && g.special)),
+      superKey: !!(keys['KeyR'] || (g && g.superKey)),
+      heavy:    !!(keys['KeyG'] || (g && g.heavy)),
+      sweep:    !!(keys['KeyB'] || (g && g.sweep)),
+      uppercut: !!(keys['KeyC'] || (g && g.uppercut)),
+      elbow:    !!(keys['KeyF'] || (g && g.elbow)),
+      teleport: !!(keys['KeyT'] || (g && g.teleport)),
+      hook:     !!(keys['KeyH'] || keys['KeyY'] || (g && g.hook)),
+    };
+  }
+  return {
+    left:  !!(keys['ArrowLeft']  || (g && g.left)),
+    right: !!(keys['ArrowRight'] || (g && g.right)),
+    crouch:!!(keys['ArrowDown']  || (g && g.crouch)),
+    jump:  !!(keys['ArrowUp']    || (g && g.jump)),
+    punch: !!(keys['KeyL'] || (g && g.punch)),
+    kick:  !!(keys['Period'] || (g && g.kick)),
+    block: !!(keys['KeyP'] || (g && g.block)),
+    special:  !!(keys['KeyO'] || (g && g.special)),
+    superKey: !!(keys['KeyI'] || (g && g.superKey)),
+    heavy:    !!(keys['KeyJ'] || (g && g.heavy)),
+    sweep:    !!(keys['KeyM'] || (g && g.sweep)),
+    uppercut: !!(keys['KeyU'] || (g && g.uppercut)),
+    elbow:    !!(keys['KeyK'] || (g && g.elbow)),
+    teleport: !!(keys['Semicolon'] || (g && g.teleport)),
+    hook:     !!(keys['KeyN'] || keys['Comma'] || (g && g.hook)),
+  };
+}
 function initSuperCam(owner){
   if(superCam)return;
   const target=owner===p1?p2:p1;
