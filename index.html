@@ -282,9 +282,7 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
 ══════════════════════════════════════════════════════ */
 #fatality-overlay{position:absolute;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.0);pointer-events:none;}
 #fatality-overlay.active{display:flex;pointer-events:all;}
-/* Sangue escorrendo */
-#blood-overlay{position:absolute;inset:0;pointer-events:none;z-index:55;opacity:0;}
-#blood-canvas{position:absolute;inset:0;width:100%;height:100%;}
+/* blood overlay removido */
 /* Texto FATALITY / BRUTALITY */
 #fatality-text-wrap{position:absolute;top:16%;width:100%;text-align:center;opacity:0;transform:scale(4) rotateX(50deg);transition:all 0.7s cubic-bezier(0.175,0.885,0.32,1.275);z-index:65;}
 #fatality-text-wrap.show{opacity:1;transform:scale(1) rotateX(0);}
@@ -314,9 +312,8 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
 /* Cena do fatality - animação 3D */
 #fatality-scene{position:absolute;inset:0;pointer-events:none;z-index:58;display:none;}
 #fatality-scene.active{display:block;}
-/* Partículas de sangue via canvas */
-#fatality-blood-particles{position:absolute;inset:0;pointer-events:none;z-index:59;}
-/* Vinheta de sangue durante fatality */
+/* partículas de sangue removidas */
+/* Vinheta durante fatality */
 #fatality-vignette{position:absolute;inset:0;pointer-events:none;z-index:57;opacity:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(80,0,0,0.55) 100%);transition:opacity 0.8s;}
 #fatality-vignette.active{opacity:1;}
 
@@ -469,10 +466,6 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
   </div>
   <button id="back-btn">← MENU</button>
   <!-- FATALITY SYSTEM -->
-  <div id="blood-overlay">
-    <canvas id="blood-canvas"></canvas>
-  </div>
-  <canvas id="fatality-blood-particles"></canvas>
   <div id="fatality-announce">
     <div id="fa-text">FINISH HIM!</div>
     <div id="fa-sub">EXECUTE SEU INIMIGO</div>
@@ -1090,292 +1083,17 @@ let fatalityState = {
   isBrutality: false,
   finishCombo: 0,
 };
-// Partículas de sangue
+// Sistema de partículas de sangue REMOVIDO (não atrapalha mais a visão do jogo)
 let bloodParticles = [];
-let bloodStains = []; // poças permanentes no chão
-let bloodAnimFrame = null;
-const bloodCanvas = document.getElementById('fatality-blood-particles');
-const bloodCtx = bloodCanvas.getContext('2d');
-function resizeBloodCanvas(){
-  bloodCanvas.width = innerWidth;
-  bloodCanvas.height = innerHeight;
-}
-resizeBloodCanvas();
-window.addEventListener('resize', resizeBloodCanvas);
-
-function spawnBloodParticles(x, y, count, color='#cc0000', style='spray'){
-  for(let i=0;i<count;i++){
-    const angle = Math.random()*Math.PI*2;
-    let speed, r, decay, gravity, vy0, type = style;
-    if(style==='spray' || style==='default'){
-      speed = 5 + Math.random()*18;
-      r = 2.5 + Math.random()*8;
-      decay = 0.008 + Math.random()*0.016;
-      gravity = 0.5 + Math.random()*0.4;
-      vy0 = Math.sin(angle)*speed - 10 - Math.random()*12;
-    } else if(style==='mist'){
-      speed = 1.5 + Math.random()*5;
-      r = 10 + Math.random()*22;
-      decay = 0.006 + Math.random()*0.01;
-      gravity = 0.04 + Math.random()*0.06;
-      vy0 = Math.sin(angle)*speed - 1.5;
-      type = 'mist';
-    } else if(style==='chunk'){
-      speed = 6 + Math.random()*16;
-      r = 7 + Math.random()*14;
-      decay = 0.005 + Math.random()*0.009;
-      gravity = 0.6 + Math.random()*0.35;
-      vy0 = Math.sin(angle)*speed - 12 - Math.random()*10;
-      type = 'chunk';
-    } else if(style==='arterial'){
-      const dir = (Math.random()>0.5?1:-1);
-      bloodParticles.push({
-        x, y,
-        vx: dir * (10 + Math.random()*18),
-        vy: -14 - Math.random()*12,
-        r: 2.5 + Math.random()*6,
-        life: 1, decay: 0.01 + Math.random()*0.018,
-        color, gravity: 0.38 + Math.random()*0.28,
-        type: 'arterial', trail: true
-      });
-      continue;
-    } else if(style==='pool'){
-      speed = 0.4 + Math.random()*2;
-      r = 12 + Math.random()*28;
-      decay = 0.002 + Math.random()*0.004;
-      gravity = 0.015;
-      vy0 = 0.5 + Math.random()*1.5;
-      type = 'pool';
-    } else if(style==='drip'){
-      bloodParticles.push({
-        x: x + (Math.random()-0.5)*20,
-        y: y,
-        vx: (Math.random()-0.5)*1.5,
-        vy: 2 + Math.random()*4,
-        r: 2 + Math.random()*4,
-        life: 1, decay: 0.004 + Math.random()*0.006,
-        color, gravity: 0.35,
-        type: 'drip'
-      });
-      continue;
-    } else {
-      speed = 5 + Math.random()*14;
-      r = 3 + Math.random()*7;
-      decay = 0.01 + Math.random()*0.016;
-      gravity = 0.45 + Math.random()*0.3;
-      vy0 = Math.sin(angle)*speed - 7 - Math.random()*9;
-    }
-    bloodParticles.push({
-      x, y,
-      vx: Math.cos(angle)*speed * (style==='spray'?1.1:1),
-      vy: vy0,
-      r, life: 1, decay, color, gravity, type,
-      rot: Math.random()*Math.PI*2,
-      rotV: (Math.random()-0.5)*0.3
-    });
-  }
-  // Mancha no chão ocasional
-  if((style==='spray'||style==='chunk') && count>=8 && Math.random()<0.45){
-    addBloodStain(x + (Math.random()-0.5)*30, Math.min(y+40, innerHeight-20), 15+Math.random()*25, color);
-  }
-  startBloodAnimation();
-}
-
-function addBloodStain(x, y, size, color){
-  bloodStains.push({
-    x, y,
-    r: size,
-    color: color || '#5a0000',
-    alpha: 0.55 + Math.random()*0.35,
-    life: 1,
-    grow: 1.002 + Math.random()*0.003
-  });
-  // Limita manchas para performance
-  if(bloodStains.length > 80) bloodStains.shift();
-}
-
-function spawnBloodDrip(x, y, color='#aa0000'){
-  for(let i=0;i<16;i++){
-    bloodParticles.push({
-      x: x + (Math.random()-0.5)*30,
-      y: y - Math.random()*10,
-      vx: (Math.random()-0.5)*2,
-      vy: 3 + Math.random()*6,
-      r: 2 + Math.random()*5,
-      life: 1,
-      decay: 0.003 + Math.random()*0.006,
-      color,
-      gravity: 0.4 + Math.random()*0.2,
-      type: 'drip'
-    });
-  }
-}
-
-function spawnGoreExplosion(x, y, intensity=1){
-  const n = Math.floor(18 * intensity);
-  const colors = ['#cc0000','#8b0000','#aa0000','#ff2222','#660000'];
-  spawnBloodParticles(x, y, n, '#cc0000', 'spray');
-  spawnBloodParticles(x, y, Math.floor(n*0.6), '#8b0000', 'chunk');
-  spawnBloodParticles(x, y, Math.floor(n*0.4), '#aa0000', 'mist');
-  spawnArterialSpray(x, y, 1, '#cc0000');
-  spawnArterialSpray(x, y, -1, '#8b0000');
-  for(let i=0;i<5;i++){
-    spawnBloodParticles(x+(Math.random()-0.5)*50, y+(Math.random()-0.5)*40, 10, colors[i%colors.length], 'spray');
-  }
-  addBloodStain(x, Math.min(y+50, innerHeight-15), 30+intensity*20, '#4a0000');
-}
-
-function spawnArterialSpray(x, y, dir=1, color='#cc0000'){
-  for(let i=0;i<24;i++){
-    bloodParticles.push({
-      x: x + (Math.random()-0.5)*12,
-      y: y + (Math.random()-0.5)*12,
-      vx: dir * (14 + Math.random()*22) + (Math.random()-0.5)*5,
-      vy: -10 - Math.random()*16 + (Math.random()-0.5)*7,
-      r: 2.5 + Math.random()*6,
-      life: 1,
-      decay: 0.01 + Math.random()*0.016,
-      color,
-      gravity: 0.42 + Math.random()*0.3,
-      type: 'arterial',
-      trail: true
-    });
-  }
-}
-
-// Burst de sangue a partir de coordenadas 3D do lutador
-function bloodBurst3D(fighter, yOff, count, color){
-  if(!fighter || !camera) return;
-  try{
-    const w = new THREE.Vector3(fighter.pos.x, fighter.pos.y + (yOff||1.0), fighter.pos.z);
-    const v = w.project(camera);
-    const sx = (v.x*0.5+0.5)*innerWidth;
-    const sy = (-v.y*0.5+0.5)*innerHeight;
-    if(v.z > 1) return;
-    spawnBloodParticles(sx, sy, count||14, color||'#bb0000', 'spray');
-    if(count >= 16) spawnBloodParticles(sx, sy, 6, '#660000', 'mist');
-    if(count >= 24){
-      spawnArterialSpray(sx, sy, fighter.facing||1, '#cc0000');
-      spawnBloodParticles(sx, sy, 8, '#8b0000', 'chunk');
-    }
-    startBloodAnimation();
-  }catch(e){}
-}
-
-function animateBlood(){
-  if(!bloodCtx || !bloodCanvas) return;
-  bloodCtx.clearRect(0, 0, bloodCanvas.width, bloodCanvas.height);
-
-  // ── Manchas no chão (crescimento desativado para não atrapalhar a visão) ──
-  for(let i=bloodStains.length-1;i>=0;i--){
-    const s = bloodStains[i];
-    // Não cresce mais — evita manchas que expandem e cobrem a tela
-    s.life -= 0.0025;
-    if(s.life <= 0.05){ bloodStains.splice(i,1); continue; }
-    bloodCtx.save();
-    bloodCtx.globalAlpha = s.alpha * Math.min(1, s.life*1.2) * 0.55;
-    bloodCtx.fillStyle = s.color;
-    bloodCtx.beginPath();
-    bloodCtx.ellipse(s.x, s.y, Math.min(s.r, 28), Math.min(s.r, 28)*0.38, 0, 0, Math.PI*2);
-    bloodCtx.fill();
-    bloodCtx.globalAlpha *= 0.5;
-    bloodCtx.fillStyle = '#2a0000';
-    bloodCtx.beginPath();
-    bloodCtx.ellipse(s.x, s.y, Math.min(s.r, 28)*0.45, Math.min(s.r, 28)*0.18, 0, 0, Math.PI*2);
-    bloodCtx.fill();
-    bloodCtx.restore();
-  }
-
-  // ── Partículas ativas ──
-  for(let i=bloodParticles.length-1;i>=0;i--){
-    const p = bloodParticles[i];
-    p.vy += p.gravity;
-    p.x += p.vx;
-    p.y += p.vy;
-    p.life -= p.decay;
-    if(p.rot !== undefined) p.rot += (p.rotV||0);
-    if(p.type==='arterial'){ p.vx *= 0.975; }
-    if(p.type==='mist'){ p.r = Math.min(p.r * 1.004, p.r0 ? p.r0 * 1.8 : 18); p.vx *= 0.96; }
-    if(p.type==='pool'){ p.r = Math.min(p.r * 1.003, 36); p.vx *= 0.88; }
-    if(p.type==='drip'){ p.vx *= 0.99; }
-
-    // Ao tocar o "chão" da tela, vira mancha
-    if(p.y > bloodCanvas.height - 30 && p.vy > 0 && (p.type==='spray'||p.type==='chunk'||p.type==='arterial'||p.type==='drip')){
-      if(Math.random() < 0.35){
-        addBloodStain(p.x, bloodCanvas.height - 18 - Math.random()*12, p.r*2.5 + 8, p.color);
-      }
-      p.life = 0;
-    }
-
-    if(p.life<=0 || p.y>bloodCanvas.height+100 || p.x<-80 || p.x>bloodCanvas.width+80){
-      bloodParticles.splice(i,1); continue;
-    }
-
-    bloodCtx.save();
-    const alphaMul = p.type==='mist' ? 0.3 : p.type==='pool' ? 0.55 : 0.92;
-    bloodCtx.globalAlpha = Math.max(0, p.life * alphaMul);
-    bloodCtx.fillStyle = p.color;
-
-    if(p.type==='drip'){
-      bloodCtx.beginPath();
-      bloodCtx.ellipse(p.x, p.y, p.r*0.4, p.r*1.8, 0, 0, Math.PI*2);
-      bloodCtx.fill();
-    } else if(p.type==='chunk'){
-      bloodCtx.translate(p.x, p.y);
-      bloodCtx.rotate(p.rot||0);
-      bloodCtx.beginPath();
-      bloodCtx.ellipse(0, 0, p.r*0.85, p.r*0.55, 0, 0, Math.PI*2);
-      bloodCtx.fill();
-      bloodCtx.globalAlpha *= 0.55;
-      bloodCtx.fillStyle = '#3a0000';
-      bloodCtx.beginPath();
-      bloodCtx.ellipse(0, 0, p.r*0.4, p.r*0.28, 0, 0, Math.PI*2);
-      bloodCtx.fill();
-    } else if(p.type==='mist'){
-      bloodCtx.beginPath();
-      bloodCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-      bloodCtx.fill();
-    } else if(p.type==='pool'){
-      bloodCtx.beginPath();
-      bloodCtx.ellipse(p.x, p.y, p.r, p.r*0.32, 0, 0, Math.PI*2);
-      bloodCtx.fill();
-    } else {
-      // spray / arterial — gota com rastro
-      bloodCtx.beginPath();
-      bloodCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-      bloodCtx.fill();
-      if(p.type==='arterial' || p.type==='spray'){
-        bloodCtx.globalAlpha *= 0.45;
-        bloodCtx.beginPath();
-        bloodCtx.arc(p.x - p.vx*0.4, p.y - p.vy*0.4, p.r*0.55, 0, Math.PI*2);
-        bloodCtx.fill();
-        bloodCtx.globalAlpha *= 0.5;
-        bloodCtx.beginPath();
-        bloodCtx.arc(p.x - p.vx*0.8, p.y - p.vy*0.8, p.r*0.3, 0, Math.PI*2);
-        bloodCtx.fill();
-      }
-    }
-    bloodCtx.restore();
-  }
-
-  if(bloodParticles.length>0 || bloodStains.length>0 || (typeof fatalityState!=='undefined' && fatalityState.executed)){
-    bloodAnimFrame = requestAnimationFrame(animateBlood);
-  } else {
-    bloodAnimFrame = null;
-  }
-}
-
-function startBloodAnimation(){
-  if(bloodAnimFrame) return;
-  if(bloodCanvas){ bloodCanvas.style.display='block'; }
-  animateBlood();
-}
-
-function clearBlood(){
-  bloodParticles = [];
-  bloodStains = [];
-  if(bloodCtx && bloodCanvas) bloodCtx.clearRect(0,0,bloodCanvas.width,bloodCanvas.height);
-}
+function spawnBloodParticles(){}
+function addBloodStain(){}
+function spawnBloodDrip(){}
+function spawnGoreExplosion(){}
+function spawnArterialSpray(){}
+function bloodBurst3D(){}
+function animateBlood(){}
+function startBloodAnimation(){}
+function clearBlood(){ bloodParticles = []; }
 
 function buildFatalityInputUI(playerWinner) {
   const winCh = playerWinner === 1 ? (p1?p1.ch:null) : (p2?p2.ch:null);
@@ -1496,14 +1214,7 @@ function executeFatality() {
   roundActive = false;
   gameOver = true;
 
-  // Ativa camada de sangue / canvas
-  try{
-    const bc = document.getElementById('fatality-blood-particles');
-    if(bc){ bc.style.display='block'; bc.style.opacity='1'; }
-    const bo = document.getElementById('blood-overlay');
-    if(bo){ bo.style.display='block'; bo.style.opacity='1'; }
-    startBloodAnimation();
-  }catch(e){}
+  // Sistema de sangue removido — fatality usa apenas efeitos 3D / flash
 
   winF.facing = loseF.pos.x > winF.pos.x ? 1 : -1;
   loseF.facing = winF.pos.x > loseF.pos.x ? 1 : -1;
@@ -3103,7 +2814,6 @@ function executeFatality() {
                 camera.updateProjectionMatrix();
                 camera.lookAt((winF.pos.x+loseF.pos.x)/2, 1.5, 0);
               }
-              startBloodAnimation();
               startFatalityParticleLoop(effect);
               fatalityOpenBurst(effect);
               const anim = FATALITY_ANIMS[effect] || FATALITY_ANIMS.crush;
@@ -4471,13 +4181,7 @@ function updateProjectiles(dt){
         target.tookDamage = true;
         if(typeof bloodBurst3D==='function'){
           bloodBurst3D(target, 0.8, pr.isSuper?36:18, '#bb0000');
-          if(pr.isSuper) bloodBurst3D(target, 1.2, 16, '#8b0000');
-        } else if(typeof spawnBloodParticles==='function'){
-          const sx = (pr.mesh.position.x / 20 + 0.5) * innerWidth;
-          const sy = ((-pr.mesh.position.y / 12) + 0.55) * innerHeight;
-          spawnBloodParticles(sx, sy, pr.isSuper?36:18, '#bb0000', 'spray');
-          if(pr.isSuper) spawnGoreExplosion(sx, sy, 1.5);
-          if(typeof startBloodAnimation==='function') startBloodAnimation();
+          // sangue de projétil removido
         }
       }
       shakeCamera=pr.isSuper?0.6:0.4;flashScreen(isBlocked?0.1:0.3,hexStr(pr.owner.ch.projColor));
@@ -5605,7 +5309,6 @@ function resetFighters(){
   });
   fatalityState.active=false;fatalityState.executed=false;fatalityState.wasLastRound=false;fatalityState.isBrutality=false;fatalityState.finishCombo=0;
   brutalityActive=false;
-  if(typeof clearBlood==='function')clearBlood();else{bloodParticles=[];}
   const hitFlash=document.getElementById('hit-flash');hitFlash.style.opacity='0';hitFlash.style.transition='';
   document.getElementById('fatality-overlay').classList.remove('active');
   const tw=document.getElementById('fatality-text-wrap');if(tw)tw.classList.remove('show');
@@ -5887,7 +5590,6 @@ function startGame(){
   document.getElementById('st1-fill').style.background=ch1.stColor;
   document.getElementById('st2-fill').style.background=ch2.stColor;
   round=1;roundWins={1:0,2:0};projectiles=[];comboFadeTimer=0;superCam=null;
-  bloodParticles=[];
   fatalityState={active:false,winner:null,loser:null,sequence:[],progress:0,timeLeft:8,timerInterval:null,executed:false,available:false,wasLastRound:false,isBrutality:false,finishCombo:0};
   document.getElementById('select-screen').classList.add('hidden');
   gpSelect.active=false;
@@ -5903,7 +5605,6 @@ function startGame(){
     p1.opponent=p2;p2.opponent=p1;
     renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
     lastTime=0;requestAnimationFrame(gameLoop);startRound(1);
-    if(typeof startBloodAnimation==='function') startBloodAnimation();
   });
 }
 document.getElementById('back-btn').addEventListener('click',()=>location.reload());
