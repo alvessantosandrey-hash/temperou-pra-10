@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>IRON FIST 3D</title>
+<title>IRON FIST 3D — VR Ready</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -269,6 +269,10 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
 .ctrl-key{display:inline-block;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:3px;padding:0 3px;font-size:8px;color:rgba(255,255,255,0.45);}
 #back-btn{position:absolute;top:10px;right:10px;z-index:50;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:3px;padding:4px 12px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.6);color:rgba(255,255,255,0.4);cursor:pointer;border-radius:4px;backdrop-filter:blur(4px);}
 #back-btn:hover{border-color:rgba(255,255,255,0.5);color:#fff;}
+#vr-btn{position:absolute;top:10px;left:10px;z-index:50;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:3px;padding:8px 18px;border:2px solid #00e5ff;background:rgba(0,30,40,0.75);color:#00e5ff;cursor:pointer;border-radius:6px;backdrop-filter:blur(6px);display:none;box-shadow:0 0 16px rgba(0,229,255,0.25);}
+#vr-btn:hover{background:rgba(0,229,255,0.2);color:#fff;border-color:#fff;}
+#vr-btn.active{border-color:#ff1744;color:#ff1744;box-shadow:0 0 16px rgba(255,23,68,0.35);}
+#vr-hint{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:50;font-size:11px;letter-spacing:2px;color:rgba(0,229,255,0.55);text-align:center;pointer-events:none;display:none;background:rgba(0,0,0,0.5);padding:6px 14px;border-radius:6px;border:1px solid rgba(0,229,255,0.2);}
 #winner-screen{position:absolute;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);}
 #winner-screen.show{display:flex;}
 .winner-icon{font-size:90px;animation:vsFloat 1.5s ease-in-out infinite;margin-bottom:10px;}
@@ -465,6 +469,8 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
     <div id="special-charge-bar"><div id="special-charge-fill"></div></div>
   </div>
   <button id="back-btn">← MENU</button>
+  <button id="vr-btn" type="button">🥽 ENTRAR VR</button>
+  <div id="vr-hint">VR: Stick = mover · Gatilho = soco · Grip = chute · A/X = especial · B/Y = SUPER · Menu = defesa</div>
   <!-- FATALITY SYSTEM -->
   <div id="fatality-announce">
     <div id="fa-text">FINISH HIM!</div>
@@ -3725,10 +3731,17 @@ function playMenu(type){
     }
   }catch(e){}
 }
+// ═══ WEBXR / VR UNIVERSAL ═══
+let xrSession=null;
+let xrRefSpace=null;
+let vrActive=false;
+let xrControllers=[]; // {grip, targetRay, inputSource, hand}
+const xrInputState={1:null,2:null}; // cached input per player from VR controllers
+
 function initThree(){
   scene=new THREE.Scene();
   scene.fog=new THREE.FogExp2(0x080812,0.025);
-  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer=new THREE.WebGLRenderer({antialias:true, alpha:false});
   renderer.setSize(innerWidth,innerHeight);
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
   renderer.shadowMap.enabled=true;
@@ -3737,12 +3750,134 @@ function initThree(){
   if(THREE.sRGBEncoding!==undefined) renderer.outputEncoding=THREE.sRGBEncoding;
   if(renderer.toneMapping!==undefined){renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;}
   renderer.setClearColor(0x060810);
+  // WebXR universal (Quest, Pico, SteamVR, Cardboard via browser)
+  renderer.xr.enabled=true;
+  if(renderer.xr.setReferenceSpaceType) renderer.xr.setReferenceSpaceType('local-floor');
   const cont=document.getElementById('canvas-container');
   cont.insertBefore(renderer.domElement,cont.firstChild);
   renderer.domElement.style.cssText='position:absolute;top:0;left:0;';
   camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,500);
   camera.position.set(0,5,20);
-  window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+  window.addEventListener('resize',()=>{
+    if(vrActive) return;
+    camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);
+  });
+  setupVRButton();
+}
+
+function setupVRButton(){
+  const btn=document.getElementById('vr-btn');
+  const hint=document.getElementById('vr-hint');
+  if(!btn) return;
+  if(navigator.xr){
+    navigator.xr.isSessionSupported('immersive-vr').then(ok=>{
+      if(ok){ btn.style.display='block'; if(hint) hint.style.display='block'; }
+    }).catch(()=>{});
+  }
+  // Também tenta magic-window / AR se VR puro não existir
+  btn.addEventListener('click', async ()=>{
+    if(vrActive){ exitVR(); return; }
+    try{
+      await enterVR();
+    }catch(e){
+      console.warn('VR session failed', e);
+      showAnnounce('VR INDISPONÍVEL', String(e.message||e).slice(0,40), 2500);
+    }
+  });
+}
+
+async function enterVR(){
+  if(!navigator.xr) throw new Error('WebXR não suportado neste navegador');
+  const session = await navigator.xr.requestSession('immersive-vr', {
+    optionalFeatures: ['local-floor','bounded-floor','hand-tracking','layers']
+  });
+  xrSession=session;
+  await renderer.xr.setSession(session);
+  vrActive=true;
+  const btn=document.getElementById('vr-btn');
+  if(btn){ btn.textContent='⏻ SAIR VR'; btn.classList.add('active'); }
+  // Posição de espectador na arena (visão lateral clássica)
+  try{
+    xrRefSpace = await session.requestReferenceSpace('local-floor');
+  }catch(e){
+    xrRefSpace = await session.requestReferenceSpace('local');
+  }
+  // Controllers
+  session.addEventListener('inputsourceschange', onXRInputsChange);
+  session.addEventListener('end', onXRSessionEnd);
+  onXRInputsChange({session, added: session.inputSources, removed:[]});
+  // Animation loop via XR
+  renderer.setAnimationLoop(gameLoop);
+}
+
+function exitVR(){
+  if(xrSession){
+    try{ xrSession.end(); }catch(e){}
+  }
+  onXRSessionEnd();
+}
+
+function onXRSessionEnd(){
+  vrActive=false;
+  xrSession=null;
+  xrRefSpace=null;
+  xrControllers=[];
+  xrInputState[1]=null; xrInputState[2]=null;
+  const btn=document.getElementById('vr-btn');
+  if(btn){ btn.textContent='🥽 ENTRAR VR'; btn.classList.remove('active'); }
+  renderer.setAnimationLoop(null);
+  lastTime=0;
+  requestAnimationFrame(gameLoop);
+  // Restaura tamanho canvas
+  renderer.setSize(innerWidth,innerHeight);
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+}
+
+function onXRInputsChange(ev){
+  // Reconstroi lista de controles
+  const sources = (ev.session && ev.session.inputSources) ? Array.from(ev.session.inputSources) : [];
+  xrControllers = sources.filter(s=>s.targetRayMode==='tracked-pointer' || s.targetRayMode==='gaze');
+}
+
+/** Lê botões/eixos de um XRInputSource → input do jogo */
+function readXRController(src){
+  if(!src || !src.gamepad) return null;
+  const gp=src.gamepad;
+  const buttons=gp.buttons||[];
+  const axes=gp.axes||[];
+  const pressed=(i)=>!!(buttons[i]&&(buttons[i].pressed||buttons[i].value>0.4));
+  const value=(i)=> (buttons[i]&&typeof buttons[i].value==='number') ? buttons[i].value : (pressed(i)?1:0);
+  // Mapeamento universal Quest / Pico / OpenXR:
+  // 0 trigger, 1 grip, 2 stick click, 3 4 A/B ou X/Y, axes 2-3 stick
+  const axX = axes.length>=3 ? axes[2] : (axes[0]||0);
+  const axY = axes.length>=4 ? axes[3] : (axes[1]||0);
+  return {
+    left: axX < -0.4,
+    right: axX > 0.4,
+    crouch: axY > 0.55,
+    jump: axY < -0.55 || pressed(3),
+    punch: value(0) > 0.55,       // trigger
+    kick: pressed(1),             // grip
+    block: pressed(2) || pressed(5), // stick click / menu
+    special: pressed(4),          // A / X
+    superKey: pressed(5) || pressed(3) && pressed(4),
+    heavy: value(0) > 0.95 && pressed(1),
+    sweep: axY > 0.7 && pressed(1),
+    uppercut: axY < -0.7 && value(0) > 0.5,
+    elbow: pressed(2) && value(0) > 0.4,
+    teleport: pressed(3) && pressed(1),
+    hook: pressed(4) && pressed(1),
+  };
+}
+
+function pollXRInputs(){
+  xrInputState[1]=null; xrInputState[2]=null;
+  if(!vrActive || !xrControllers.length) return;
+  // 1º controle = P1, 2º = P2
+  if(xrControllers[0]) xrInputState[1]=readXRController(xrControllers[0]);
+  if(xrControllers[1]) xrInputState[2]=readXRController(xrControllers[1]);
+  // Se só 1 controle e modo CPU, só P1
 }
 function buildArena(ch1,ch2){
   const map = MAPS[selectedMap] || MAPS[0];
@@ -5475,6 +5610,10 @@ function getInput(pid){
   if(vsCPU && pid === 2 && p2 && p1){
     return getAIInput(p2, p1);
   }
+  // Prioridade: controle VR (óculos)
+  if(vrActive && xrInputState[pid]){
+    return xrInputState[pid];
+  }
   const gps = navigator.getGamepads ? navigator.getGamepads() : [];
   const gp = gps[pid - 1];
   const g = readGamepad(gp);
@@ -5531,13 +5670,15 @@ function initSuperCam(owner){
 //  GAME LOOP
 // ══════════════════════════════════════════════════════
 function gameLoop(ts){
-  requestAnimationFrame(gameLoop);
-  const rawDt=Math.min((ts-lastTime)/1000,0.05);lastTime=ts;
-  const t=ts*0.001;const dt=rawDt;
-  if(roundActive&&!gameOver){p1.applyControl(getInput(1));p2.applyControl(getInput(2));}
-  p1.physicsStep(dt);p2.physicsStep(dt);
-  if(roundActive&&!gameOver){checkCombat();updateProjectiles(dt);}
-  p1.animate(dt);p2.animate(dt);
+  // Em VR o Three.js chama via setAnimationLoop; fora usa rAF
+  if(!vrActive) requestAnimationFrame(gameLoop);
+  const rawDt=Math.min((ts-(lastTime||ts))/1000,0.05);lastTime=ts||performance.now();
+  const t=(ts||performance.now())*0.001;const dt=rawDt;
+  if(vrActive) pollXRInputs();
+  if(roundActive&&!gameOver&&p1&&p2){p1.applyControl(getInput(1));p2.applyControl(getInput(2));}
+  if(p1)p1.physicsStep(dt);if(p2)p2.physicsStep(dt);
+  if(roundActive&&!gameOver&&p1&&p2){checkCombat();updateProjectiles(dt);}
+  if(p1)p1.animate(dt);if(p2)p2.animate(dt);
   // Nomes flutuando acima dos lutadores
   if(camera && p1 && p2){
     [[p1,'name-tag-p1'],[p2,'name-tag-p2']].forEach(([f,id])=>{
@@ -5550,9 +5691,17 @@ function gameLoop(ts){
       el.style.left=x+'px'; el.style.top=y+'px'; el.style.opacity='0.95';
     });
   }
-  updateSys(sys1,dt);updateSys(sys2,dt);
-  if(comboFadeTimer>0 && !fatalityState.active && !fatalityState.executed){comboFadeTimer-=rawDt;if(comboFadeTimer<=0){document.getElementById('combo-display').style.opacity=0;if(currentComboOwner===1)p1.combo=0;else p2.combo=0;}}
+  if(sys1)updateSys(sys1,dt);if(sys2)updateSys(sys2,dt);
+  if(comboFadeTimer>0 && !fatalityState.active && !fatalityState.executed){comboFadeTimer-=rawDt;if(comboFadeTimer<=0){document.getElementById('combo-display').style.opacity=0;if(currentComboOwner===1&&p1)p1.combo=0;else if(p2)p2.combo=0;}}
+  if(!p1||!p2){ if(renderer&&scene&&camera) renderer.render(scene,camera); return; }
   const midX=(p1.pos.x+p2.pos.x)/2,dist=Math.abs(p1.pos.x-p2.pos.x);
+  // Em VR o headset controla a câmera — não forçamos lookAt (só offset suave do ponto de vista)
+  if(vrActive){
+    // Opcional: mover um "palco" — mantemos cena fixa; usuário anda/olha livre no espaço local
+    if(shakeCamera>0){shakeCamera-=rawDt*2;}
+    if(renderer&&scene&&camera) renderer.render(scene,camera);
+    return;
+  }
   if(superCam){
     const sc=superCam;sc.time+=rawDt;const prog=Math.min(sc.time/sc.duration,1);
     if(sc.phase==='intro'){camera.position.x+=(sc.behindX-camera.position.x)*0.12;camera.position.y+=(sc.shooterY-camera.position.y)*0.10;camera.position.z+=(sc.closeZ-camera.position.z)*0.10;camera.lookAt(sc.targetX,sc.targetY,0);camera.fov+=(42-camera.fov)*0.06;camera.updateProjectionMatrix();}
