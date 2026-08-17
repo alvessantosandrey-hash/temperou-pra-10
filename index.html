@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -272,6 +273,9 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
 #vr-btn{position:absolute;top:10px;left:10px;z-index:50;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:3px;padding:8px 18px;border:2px solid #00e5ff;background:rgba(0,30,40,0.75);color:#00e5ff;cursor:pointer;border-radius:6px;backdrop-filter:blur(6px);display:none;box-shadow:0 0 16px rgba(0,229,255,0.25);}
 #vr-btn:hover{background:rgba(0,229,255,0.2);color:#fff;border-color:#fff;}
 #vr-btn.active{border-color:#ff1744;color:#ff1744;box-shadow:0 0 16px rgba(255,23,68,0.35);}
+#vr-btn-menu{font-family:'Bebas Neue',sans-serif;font-size:clamp(12px,1.6vw,16px);letter-spacing:2px;padding:6px 14px;border:2px solid rgba(0,229,255,0.45);background:rgba(0,30,40,0.55);color:#00e5ff;cursor:pointer;border-radius:6px;margin-left:10px;transition:all 0.2s;display:none;}
+#vr-btn-menu:hover{border-color:#00e5ff;background:rgba(0,229,255,0.15);color:#fff;}
+#vr-btn-menu.active{border-color:#ffd600;color:#ffd600;background:rgba(255,214,0,0.12);box-shadow:0 0 14px rgba(255,214,0,0.3);}
 #vr-hint{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:50;font-size:11px;letter-spacing:2px;color:rgba(0,229,255,0.55);text-align:center;pointer-events:none;display:none;background:rgba(0,0,0,0.5);padding:6px 14px;border-radius:6px;border:1px solid rgba(0,229,255,0.2);}
 #winner-screen{position:absolute;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);}
 #winner-screen.show{display:flex;}
@@ -357,8 +361,10 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
   <div class="select-content">
     <div class="select-top">
       <div class="select-title">IRON FIST 3D</div>
+      <button id="vr-btn-menu" type="button" title="Ativar modo VR">🥽 VR</button>
     </div>
     <div class="select-subtitle">SELECIONE SEU GUERREIRO</div>
+    <div id="vr-menu-status" style="display:none;text-align:center;font-size:11px;letter-spacing:2px;color:#00e5ff;margin:2px 0 6px;text-shadow:0 0 10px rgba(0,229,255,0.4)">VR ATIVO — mãos livres ou controles · escolha lutadores e FIGHT</div>
     <div class="mode-row" id="mode-row">
       <button class="mode-btn active" id="mode-2p" type="button">👥 2 JOGADORES</button>
       <button class="mode-btn" id="mode-1p" type="button">🤖 1P vs CPU</button>
@@ -470,7 +476,7 @@ body{overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#ff
   </div>
   <button id="back-btn">← MENU</button>
   <button id="vr-btn" type="button">🥽 ENTRAR VR</button>
-  <div id="vr-hint">VR: Stick = mover · Gatilho = soco · Grip = chute · A/X = especial · B/Y = SUPER · Menu = defesa</div>
+  <div id="vr-hint">VR: Stick=mover · Gatilho=soco · Grip=chute · ✋ Mãos: pinça=soco · punho=chute · palma=defesa · apontar=especial</div>
   <!-- FATALITY SYSTEM -->
   <div id="fatality-announce">
     <div id="fa-text">FINISH HIM!</div>
@@ -3731,12 +3737,25 @@ function playMenu(type){
     }
   }catch(e){}
 }
-// ═══ WEBXR / VR UNIVERSAL ═══
+// ═══ WEBXR / VR UNIVERSAL + HAND TRACKING ═══
 let xrSession=null;
 let xrRefSpace=null;
 let vrActive=false;
-let xrControllers=[]; // {grip, targetRay, inputSource, hand}
-const xrInputState={1:null,2:null}; // cached input per player from VR controllers
+let preferVR=false; // marcado no menu → entra VR ao iniciar luta
+let handTrackingActive=false;
+let xrControllers=[]; // gamepad controllers
+let xrHands=[];       // hand-tracking sources {src, handedness}
+let xrFrame=null;     // current XRFrame (from setAnimationLoop)
+let vrFirstPerson=true; // câmera na cabeça do lutador local (P1)
+let vrFpYaw=0;          // suavização da rotação do mundo
+const xrInputState={1:null,2:null};
+// Estado de gestos por mão (edge detect)
+const handGesturePrev={left:{},right:{}};
+const handMeshes={}; // visual feedback joints
+
+function emptyXRInput(){
+  return {left:false,right:false,jump:false,crouch:false,punch:false,kick:false,block:false,special:false,superKey:false,heavy:false,sweep:false,uppercut:false,elbow:false,teleport:false,hook:false};
+}
 
 function initThree(){
   scene=new THREE.Scene();
@@ -3750,7 +3769,6 @@ function initThree(){
   if(THREE.sRGBEncoding!==undefined) renderer.outputEncoding=THREE.sRGBEncoding;
   if(renderer.toneMapping!==undefined){renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;}
   renderer.setClearColor(0x060810);
-  // WebXR universal (Quest, Pico, SteamVR, Cardboard via browser)
   renderer.xr.enabled=true;
   if(renderer.xr.setReferenceSpaceType) renderer.xr.setReferenceSpaceType('local-floor');
   const cont=document.getElementById('canvas-container');
@@ -3762,85 +3780,494 @@ function initThree(){
     if(vrActive) return;
     camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);
   });
-  setupVRButton();
+  setupVRButtons();
 }
 
-function setupVRButton(){
-  const btn=document.getElementById('vr-btn');
+/** Detecta suporte WebXR e mostra botões do menu + luta */
+function setupVRButtons(){
+  const btnFight=document.getElementById('vr-btn');
+  const btnMenu=document.getElementById('vr-btn-menu');
   const hint=document.getElementById('vr-hint');
-  if(!btn) return;
+  const show=()=>{
+    if(btnFight) btnFight.style.display='block';
+    if(btnMenu) btnMenu.style.display='inline-block';
+    if(hint) hint.style.display='block';
+  };
   if(navigator.xr){
-    navigator.xr.isSessionSupported('immersive-vr').then(ok=>{
-      if(ok){ btn.style.display='block'; if(hint) hint.style.display='block'; }
-    }).catch(()=>{});
+    navigator.xr.isSessionSupported('immersive-vr').then(ok=>{ if(ok) show(); }).catch(()=>{});
   }
-  // Também tenta magic-window / AR se VR puro não existir
-  btn.addEventListener('click', async ()=>{
-    if(vrActive){ exitVR(); return; }
-    try{
-      await enterVR();
-    }catch(e){
-      console.warn('VR session failed', e);
-      showAnnounce('VR INDISPONÍVEL', String(e.message||e).slice(0,40), 2500);
-    }
-  });
+  if(btnFight && !btnFight._vrBound){
+    btnFight._vrBound=true;
+    btnFight.addEventListener('click', async ()=>{
+      if(vrActive){ exitVR(); return; }
+      try{ await enterVR(); }catch(e){
+        console.warn('VR session failed', e);
+        if(typeof showAnnounce==='function') showAnnounce('VR INDISPONÍVEL', String(e.message||e).slice(0,40), 2500);
+      }
+    });
+  }
+  if(btnMenu && !btnMenu._vrBound){
+    btnMenu._vrBound=true;
+    btnMenu.addEventListener('click', ()=>{
+      preferVR=!preferVR;
+      btnMenu.classList.toggle('active', preferVR);
+      const st=document.getElementById('vr-menu-status');
+      if(st) st.style.display=preferVR?'block':'none';
+      btnMenu.textContent=preferVR?'🥽 VR ON':'🥽 VR';
+    });
+  }
+}
+// Setup menu button ASAP (antes da luta)
+if(typeof document!=='undefined'){
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', ()=>{ try{setupVRButtons();}catch(e){} });
+  else try{setupVRButtons();}catch(e){}
 }
 
 async function enterVR(){
   if(!navigator.xr) throw new Error('WebXR não suportado neste navegador');
+  if(!renderer) throw new Error('Renderer ainda não iniciado — comece a luta primeiro ou aguarde');
   const session = await navigator.xr.requestSession('immersive-vr', {
     optionalFeatures: ['local-floor','bounded-floor','hand-tracking','layers']
   });
   xrSession=session;
   await renderer.xr.setSession(session);
   vrActive=true;
+  preferVR=true;
+  vrFirstPerson=true;
+  vrFpYaw = (p1 && p1.facing < 0) ? -Math.PI/2 : Math.PI/2;
+  if(camera){ camera.near = 0.05; camera.far = 200; camera.updateProjectionMatrix(); }
   const btn=document.getElementById('vr-btn');
   if(btn){ btn.textContent='⏻ SAIR VR'; btn.classList.add('active'); }
-  // Posição de espectador na arena (visão lateral clássica)
-  try{
-    xrRefSpace = await session.requestReferenceSpace('local-floor');
-  }catch(e){
-    xrRefSpace = await session.requestReferenceSpace('local');
-  }
-  // Controllers
+  const btnMenu=document.getElementById('vr-btn-menu');
+  if(btnMenu){ btnMenu.classList.add('active'); btnMenu.textContent='🥽 VR ON'; }
+  const st=document.getElementById('vr-menu-status');
+  if(st) st.style.display='block';
+  try{ xrRefSpace = await session.requestReferenceSpace('local-floor'); }
+  catch(e){ xrRefSpace = await session.requestReferenceSpace('local'); }
   session.addEventListener('inputsourceschange', onXRInputsChange);
   session.addEventListener('end', onXRSessionEnd);
-  onXRInputsChange({session, added: session.inputSources, removed:[]});
-  // Animation loop via XR
+  onXRInputsChange({session});
+  // Detecta hand tracking
+  handTrackingActive = Array.from(session.inputSources||[]).some(s=>!!s.hand);
+  updateVRHint();
   renderer.setAnimationLoop(gameLoop);
 }
 
-function exitVR(){
-  if(xrSession){
-    try{ xrSession.end(); }catch(e){}
+function updateVRHint(){
+  const hint=document.getElementById('vr-hint');
+  if(!hint) return;
+  if(handTrackingActive){
+    hint.innerHTML='👁️ 1ª PESSOA · ✋ Pinça=soco · Punho=chute · Palma=defesa · Apontar=especial · 2 mãos↑=SUPER';
+  } else {
+    hint.innerHTML='👁️ VR 1ª PESSOA (olhos do P1) · Stick=mover · Gatilho=soco · Grip=chute · ✋ solte o controle p/ mãos';
   }
+}
+
+function exitVR(){
+  if(xrSession){ try{ xrSession.end(); }catch(e){} }
   onXRSessionEnd();
 }
 
 function onXRSessionEnd(){
   vrActive=false;
+  handTrackingActive=false;
   xrSession=null;
   xrRefSpace=null;
+  xrFrame=null;
   xrControllers=[];
+  xrHands=[];
   xrInputState[1]=null; xrInputState[2]=null;
+  handTrackState.left = makeHandState();
+  handTrackState.right = makeHandState();
+  clearHandMeshes();
+  resetVRWorldTransform();
   const btn=document.getElementById('vr-btn');
   if(btn){ btn.textContent='🥽 ENTRAR VR'; btn.classList.remove('active'); }
-  renderer.setAnimationLoop(null);
+  if(renderer){
+    renderer.setAnimationLoop(null);
+    try{
+      renderer.setSize(innerWidth,innerHeight);
+      if(camera){ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); }
+    }catch(e){}
+  }
   lastTime=0;
-  requestAnimationFrame(gameLoop);
-  // Restaura tamanho canvas
-  renderer.setSize(innerWidth,innerHeight);
-  camera.aspect=innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
+  if(p1&&p2) requestAnimationFrame(gameLoop);
 }
 
 function onXRInputsChange(ev){
-  // Reconstroi lista de controles
-  const sources = (ev.session && ev.session.inputSources) ? Array.from(ev.session.inputSources) : [];
-  xrControllers = sources.filter(s=>s.targetRayMode==='tracked-pointer' || s.targetRayMode==='gaze');
+  const session = (ev && ev.session) || xrSession;
+  if(!session) return;
+  const sources = Array.from(session.inputSources||[]);
+  xrHands = sources.filter(s=>!!s.hand).map(s=>({src:s, handedness:s.handedness||'right'}));
+  xrControllers = sources.filter(s=>!s.hand && (s.targetRayMode==='tracked-pointer'||s.targetRayMode==='gaze'));
+  handTrackingActive = xrHands.length>0;
+  updateVRHint();
 }
 
-/** Lê botões/eixos de um XRInputSource → input do jogo */
+function clearHandMeshes(){
+  Object.keys(handMeshes).forEach(k=>{
+    const m=handMeshes[k];
+    if(m&&m.parent) m.parent.remove(m);
+    delete handMeshes[k];
+  });
+}
+
+/** Reseta transform da cena ao sair do VR */
+function resetVRWorldTransform(){
+  if(!scene) return;
+  scene.position.set(0,0,0);
+  scene.rotation.set(0,0,0);
+  vrFpYaw=0;
+  if(p1){
+    if(p1.group) p1.group.visible=true;
+    if(p1.head) p1.head.visible=true;
+    if(p1.root) p1.root.visible=true;
+  }
+}
+
+/**
+ * Primeira pessoa VR: desloca o mundo para a cabeça do P1
+ * e alinha o eixo da luta com a frente do jogador (-Z).
+ * Headset controla look; mundo segue o lutador.
+ */
+function updateVRFirstPerson(){
+  if(!vrActive || !vrFirstPerson || !scene || !p1) return;
+  const eyeHeight = 0.72; // acima do pivot do lutador (ombro/cabeça)
+  const groundY = (typeof FIGHTER_GROUND_Y!=='undefined'?FIGHTER_GROUND_Y:2.16);
+  // Posição dos olhos do P1 no espaço do jogo
+  const eyeX = p1.pos.x;
+  const eyeY = p1.pos.y + groundY + eyeHeight;
+  const eyeZ = p1.pos.z;
+
+  // Yaw: oponente à frente. Facing +1 = oponente em +X → girar mundo -90° (Math.PI/2)
+  // para que +X do jogo fique em -Z do headset (direção natural do olhar).
+  let targetYaw = p1.facing > 0 ? Math.PI / 2 : -Math.PI / 2;
+  if(p2){
+    const dx = p2.pos.x - p1.pos.x;
+    // atan2(dx, dz) com dz=0 → alinha eixo X da luta com -Z da câmera
+    targetYaw = Math.atan2(dx, 0.0001) + Math.PI / 2;
+    // Preferir facing do lutador para não girar 180° bruscamente atrás
+    const faceYaw = p1.facing > 0 ? Math.PI / 2 : -Math.PI / 2;
+    // Mistura leve para estabilidade
+    let dy = targetYaw - faceYaw;
+    while(dy > Math.PI) dy -= Math.PI*2;
+    while(dy < -Math.PI) dy += Math.PI*2;
+    targetYaw = faceYaw + dy * 0.15;
+  }
+  // Suaviza rotação do mundo
+  let dyaw = targetYaw - vrFpYaw;
+  while(dyaw > Math.PI) dyaw -= Math.PI*2;
+  while(dyaw < -Math.PI) dyaw += Math.PI*2;
+  vrFpYaw += dyaw * 0.12;
+  scene.rotation.set(0, vrFpYaw, 0);
+
+  // Offset: após rotação Y, o ponto eye deve ir para (0, 0, 0) no espaço da câmera XR.
+  // scene.rotation.y = θ; ponto p vira R*p + T = 0 ⇒ T = -R*eye
+  const c = Math.cos(vrFpYaw), s = Math.sin(vrFpYaw);
+  // R_y * (eyeX, eyeY, eyeZ) = (c*eyeX + s*eyeZ, eyeY, -s*eyeX + c*eyeZ)
+  const rx = c * eyeX + s * eyeZ;
+  const rz = -s * eyeX + c * eyeZ;
+  scene.position.set(-rx, -eyeY, -rz);
+
+  // Micro shake no impacto (mundo)
+  if(shakeCamera > 0){
+    scene.position.x += (Math.random()-0.5) * shakeCamera * 0.08;
+    scene.position.y += (Math.random()-0.5) * shakeCamera * 0.05;
+  }
+
+  // Esconde a cabeça do P1 (evita ver dentro do próprio modelo)
+  if(p1.head) p1.head.visible = false;
+  // Mantém corpo visível se olhar para baixo (opcional: ocultar torso também)
+  // if(p1.torso) p1.torso.visible = false;
+}
+
+/** Converte posição XR (ref space) → espaço local da cena (com offset FP) */
+function xrToSceneLocal(v){
+  if(!v) return v;
+  // world ≈ scene.R * local + scene.T  ⇒ local = R^-1 * (world - T)
+  const invY = -scene.rotation.y;
+  const c = Math.cos(invY), s = Math.sin(invY);
+  const wx = v.x - scene.position.x;
+  const wy = v.y - scene.position.y;
+  const wz = v.z - scene.position.z;
+  return new THREE.Vector3(c*wx + s*wz, wy, -s*wx + c*wz);
+}
+
+/** Posição de junta da mão no espaço da cena */
+function getJointPos(hand, jointName, frame, refSpace){
+  if(!hand || !frame || !refSpace) return null;
+  try{
+    if(typeof frame.getJointPose==='function' && hand.get){
+      const joint=hand.get(jointName);
+      if(joint){
+        const pose=frame.getJointPose(joint, refSpace);
+        if(pose&&pose.transform&&pose.transform.position){
+          const p=pose.transform.position;
+          return new THREE.Vector3(p.x, p.y, p.z);
+        }
+      }
+    }
+  }catch(e){}
+  return null;
+}
+
+function dist3(a,b){
+  if(!a||!b) return 999;
+  return a.distanceTo(b);
+}
+
+// ── Estado filtrado por mão (anti-ruído / histerese / one-shot) ──
+const HAND_GESTURE = {
+  // limiares (metros) — calibrados para Quest/Pico adult hand
+  PINCH_ON: 0.028,
+  PINCH_OFF: 0.045,
+  FIST_CURL_ON: 0.72,   // 0..1 quanto mais alto = mais fechado
+  FIST_CURL_OFF: 0.55,
+  POINT_INDEX_EXT: 0.55, // extensão relativa do indicador
+  POINT_OTHER_CURL: 0.55,
+  OPEN_CURL_MAX: 0.28,
+  MOVE_X: 0.12,
+  JUMP_Y: 1.48,
+  CROUCH_Y: 0.95,
+  // filtros
+  SMOOTH: 0.35,          // EMA das features (0=lento, 1=raw)
+  HOLD_FRAMES: 3,        // frames mínimos para confirmar gesto
+  ATTACK_COOLDOWN: 0.28, // segundos entre one-shots de ataque
+  VEL_UPPERCUT: 0.9,     // m/s vertical
+  VEL_PUNCH_Z: -0.7,     // m/s para frente (z negativo típico)
+};
+
+/** estado por handedness */
+function makeHandState(){
+  return {
+    smooth: { pinch:0.1, curl:0.3, indexExt:0.5, otherCurl:0.3, x:0, y:1.2, z:0 },
+    vel: { x:0, y:0, z:0 },
+    lastPos: null,
+    lastT: 0,
+    gesture: 'none',
+    confFrames: 0,
+    active: { punch:false, kick:false, block:false, special:false, heavy:false, uppercut:false, sweep:false, elbow:false },
+    cooldown: { punch:0, kick:0, special:0, heavy:0, uppercut:0, sweep:0, elbow:0 },
+    oneShot: { punch:false, kick:false, special:false, heavy:false, uppercut:false, sweep:false, elbow:false },
+  };
+}
+const handTrackState = { left: makeHandState(), right: makeHandState() };
+
+function ema(prev, next, a){
+  if(next==null || isNaN(next)) return prev;
+  return prev + (next - prev) * a;
+}
+
+function fingerCurl(tip, wrist, openRef){
+  // 0 = esticado, 1 = fechado — normaliza pela distância tip-wrist
+  if(!tip||!wrist) return 0.5;
+  const d = dist3(tip, wrist);
+  const openD = openRef || 0.16;
+  const closedD = 0.06;
+  const c = 1 - (d - closedD) / (openD - closedD);
+  return Math.max(0, Math.min(1, c));
+}
+
+function updateHandVisual(side, index, gesture){
+  if(!index || !scene) return;
+  const key=side+'-tip';
+  if(!handMeshes[key]){
+    const geo=new THREE.SphereGeometry(0.02,10,10);
+    const mat=new THREE.MeshBasicMaterial({color:side==='left'?0x00e5ff:0xff6600, transparent:true, opacity:0.9});
+    handMeshes[key]=new THREE.Mesh(geo,mat);
+    scene.add(handMeshes[key]);
+  }
+  const m=handMeshes[key];
+  // Em 1ª pessoa o mundo está offsetado — juntas XR precisam ir para espaço local da cena
+  if(vrFirstPerson && vrActive){
+    const local = xrToSceneLocal(index);
+    m.position.copy(local);
+  } else {
+    m.position.copy(index);
+  }
+  m.visible=true;
+  const colors={
+    none: side==='left'?0x00e5ff:0xff6600,
+    pinch:0xffd600, fist:0xff1744, point:0xe040fb, open:0x69f0ae, move:0xffffff
+  };
+  const col=colors[gesture]||colors.none;
+  m.material.color.setHex(col);
+  m.scale.setScalar(gesture==='none'?1:1.35);
+}
+
+/**
+ * Detecção otimizada de gestos (filtro + histerese + one-shot)
+ */
+function readXRHand(handSrc, frame, refSpace, side){
+  const hand=handSrc.hand || handSrc;
+  const input=emptyXRInput();
+  if(!hand || !frame || !refSpace) return input;
+
+  const st = handTrackState[side] || (handTrackState[side]=makeHandState());
+  const now = performance.now() * 0.001;
+  const dt = st.lastT ? Math.min(0.05, Math.max(0.008, now - st.lastT)) : 0.016;
+  st.lastT = now;
+
+  // Cooldowns
+  Object.keys(st.cooldown).forEach(k=>{ st.cooldown[k]=Math.max(0, st.cooldown[k]-dt); });
+  Object.keys(st.oneShot).forEach(k=>{ st.oneShot[k]=false; });
+
+  const wrist=getJointPos(hand,'wrist',frame,refSpace);
+  const thumb=getJointPos(hand,'thumb-tip',frame,refSpace);
+  const index=getJointPos(hand,'index-finger-tip',frame,refSpace);
+  const middle=getJointPos(hand,'middle-finger-tip',frame,refSpace);
+  const ring=getJointPos(hand,'ring-finger-tip',frame,refSpace);
+  const pinky=getJointPos(hand,'pinky-finger-tip',frame,refSpace);
+
+  if(!wrist){
+    updateHandVisual(side, index, 'none');
+    return input;
+  }
+
+  // Velocidade do pulso (gesto dinâmico)
+  if(st.lastPos){
+    const invDt = 1/dt;
+    st.vel.x = ema(st.vel.x, (wrist.x - st.lastPos.x)*invDt, 0.4);
+    st.vel.y = ema(st.vel.y, (wrist.y - st.lastPos.y)*invDt, 0.4);
+    st.vel.z = ema(st.vel.z, (wrist.z - st.lastPos.z)*invDt, 0.4);
+  }
+  st.lastPos = wrist.clone();
+
+  // Features brutas
+  const rawPinch = dist3(thumb, index);
+  const curls = {
+    index: fingerCurl(index, wrist, 0.17),
+    middle: fingerCurl(middle, wrist, 0.17),
+    ring: fingerCurl(ring, wrist, 0.16),
+    pinky: fingerCurl(pinky, wrist, 0.15),
+    thumb: fingerCurl(thumb, wrist, 0.12),
+  };
+  const rawCurl = (curls.index + curls.middle + curls.ring + curls.pinky) * 0.25;
+  const rawIndexExt = 1 - curls.index;
+  const rawOtherCurl = (curls.middle + curls.ring + curls.pinky) / 3;
+
+  // EMA
+  const a = HAND_GESTURE.SMOOTH;
+  st.smooth.pinch = ema(st.smooth.pinch, rawPinch, a);
+  st.smooth.curl = ema(st.smooth.curl, rawCurl, a);
+  st.smooth.indexExt = ema(st.smooth.indexExt, rawIndexExt, a);
+  st.smooth.otherCurl = ema(st.smooth.otherCurl, rawOtherCurl, a);
+  st.smooth.x = ema(st.smooth.x, wrist.x, a);
+  st.smooth.y = ema(st.smooth.y, wrist.y, a);
+  st.smooth.z = ema(st.smooth.z, wrist.z, a);
+
+  const sm = st.smooth;
+  const G = HAND_GESTURE;
+
+  // Classificação com histerese
+  let candidate = 'none';
+  // prioridade: pinch > fist > point > open
+  const pinchActive = st.gesture==='pinch'
+    ? sm.pinch < G.PINCH_OFF
+    : sm.pinch < G.PINCH_ON;
+  const fistActive = st.gesture==='fist'
+    ? sm.curl > G.FIST_CURL_OFF
+    : sm.curl > G.FIST_CURL_ON;
+  const pointActive = st.gesture==='point'
+    ? (sm.indexExt > 0.45 && sm.otherCurl > 0.4 && sm.pinch > G.PINCH_ON)
+    : (sm.indexExt > G.POINT_INDEX_EXT && sm.otherCurl > G.POINT_OTHER_CURL && sm.pinch > G.PINCH_OFF);
+  const openActive = st.gesture==='open'
+    ? sm.curl < G.OPEN_CURL_MAX + 0.12
+    : sm.curl < G.OPEN_CURL_MAX && sm.pinch > G.PINCH_OFF;
+
+  if(pinchActive) candidate = 'pinch';
+  else if(fistActive) candidate = 'fist';
+  else if(pointActive) candidate = 'point';
+  else if(openActive) candidate = 'open';
+
+  // Confirmação por frames (anti-flicker)
+  if(candidate === st.gesture){
+    st.confFrames = Math.min(20, st.confFrames + 1);
+  } else if(candidate !== 'none'){
+    st.confFrames++;
+    if(st.confFrames >= G.HOLD_FRAMES){
+      st.gesture = candidate;
+      st.confFrames = 0;
+    }
+  } else {
+    st.confFrames++;
+    if(st.confFrames >= G.HOLD_FRAMES + 1){
+      st.gesture = 'none';
+      st.confFrames = 0;
+    }
+  }
+
+  updateHandVisual(side, index, st.gesture);
+
+  // Movimento contínuo (posição suavizada)
+  if(sm.x < -G.MOVE_X) input.left = true;
+  if(sm.x >  G.MOVE_X) input.right = true;
+  if(sm.y > G.JUMP_Y) input.jump = true;
+  if(sm.y < G.CROUCH_Y) input.crouch = true;
+
+  // Defesa: mantém enquanto palma aberta
+  if(st.gesture === 'open') input.block = true;
+
+  // Ataques one-shot (borda de entrada + cooldown)
+  function fire(name){
+    if(st.cooldown[name] > 0) return;
+    st.oneShot[name] = true;
+    st.cooldown[name] = G.ATTACK_COOLDOWN;
+  }
+
+  // Punch: pinça (ou jab rápido para frente)
+  if(st.gesture === 'pinch'){
+    if(!st.active.punch) fire('punch');
+    st.active.punch = true;
+    // Heavy: pinça + movimento forte para frente
+    if(st.vel.z < G.VEL_PUNCH_Z && st.cooldown.heavy <= 0) fire('heavy');
+  } else st.active.punch = false;
+
+  // Kick: punho
+  if(st.gesture === 'fist'){
+    if(!st.active.kick) fire('kick');
+    st.active.kick = true;
+    // Uppercut: punho + velocidade para cima
+    if(st.vel.y > G.VEL_UPPERCUT && sm.y > 1.15) fire('uppercut');
+    // Sweep: punho baixo
+    if(sm.y < 1.05 && Math.abs(st.vel.x) > 0.5) fire('sweep');
+  } else st.active.kick = false;
+
+  // Special: apontar (one-shot na entrada)
+  if(st.gesture === 'point'){
+    if(!st.active.special) fire('special');
+    st.active.special = true;
+  } else st.active.special = false;
+
+  // Elbow: pinça + movimento lateral rápido
+  if(st.gesture === 'pinch' && Math.abs(st.vel.x) > 1.1) fire('elbow');
+
+  // Aplica one-shots no input deste frame
+  if(st.oneShot.punch) input.punch = true;
+  if(st.oneShot.kick) input.kick = true;
+  if(st.oneShot.special) input.special = true;
+  if(st.oneShot.heavy) input.heavy = true;
+  if(st.oneShot.uppercut) input.uppercut = true;
+  if(st.oneShot.sweep) input.sweep = true;
+  if(st.oneShot.elbow) input.elbow = true;
+
+  // Teleporte: apontar + mão alta
+  if(st.gesture === 'point' && sm.y > 1.45 && st.cooldown.special <= 0.05){
+    input.teleport = true;
+  }
+
+  return input;
+}
+
+function mergeInput(a,b){
+  if(!a) return b||emptyXRInput();
+  if(!b) return a;
+  const o=emptyXRInput();
+  Object.keys(o).forEach(k=>{ o[k]=!!(a[k]||b[k]); });
+  return o;
+}
+
+/** Lê botões/eixos de um XRInputSource (controle físico) */
 function readXRController(src){
   if(!src || !src.gamepad) return null;
   const gp=src.gamepad;
@@ -3848,8 +4275,6 @@ function readXRController(src){
   const axes=gp.axes||[];
   const pressed=(i)=>!!(buttons[i]&&(buttons[i].pressed||buttons[i].value>0.4));
   const value=(i)=> (buttons[i]&&typeof buttons[i].value==='number') ? buttons[i].value : (pressed(i)?1:0);
-  // Mapeamento universal Quest / Pico / OpenXR:
-  // 0 trigger, 1 grip, 2 stick click, 3 4 A/B ou X/Y, axes 2-3 stick
   const axX = axes.length>=3 ? axes[2] : (axes[0]||0);
   const axY = axes.length>=4 ? axes[3] : (axes[1]||0);
   return {
@@ -3857,11 +4282,11 @@ function readXRController(src){
     right: axX > 0.4,
     crouch: axY > 0.55,
     jump: axY < -0.55 || pressed(3),
-    punch: value(0) > 0.55,       // trigger
-    kick: pressed(1),             // grip
-    block: pressed(2) || pressed(5), // stick click / menu
-    special: pressed(4),          // A / X
-    superKey: pressed(5) || pressed(3) && pressed(4),
+    punch: value(0) > 0.55,
+    kick: pressed(1),
+    block: pressed(2) || pressed(5),
+    special: pressed(4),
+    superKey: pressed(5) || (pressed(3)&&pressed(4)),
     heavy: value(0) > 0.95 && pressed(1),
     sweep: axY > 0.7 && pressed(1),
     uppercut: axY < -0.7 && value(0) > 0.5,
@@ -3873,11 +4298,48 @@ function readXRController(src){
 
 function pollXRInputs(){
   xrInputState[1]=null; xrInputState[2]=null;
-  if(!vrActive || !xrControllers.length) return;
-  // 1º controle = P1, 2º = P2
-  if(xrControllers[0]) xrInputState[1]=readXRController(xrControllers[0]);
-  if(xrControllers[1]) xrInputState[2]=readXRController(xrControllers[1]);
-  // Se só 1 controle e modo CPU, só P1
+  if(!vrActive) return;
+  const frame=xrFrame;
+  const ref=xrRefSpace;
+
+  // Hand tracking (prioridade se ativo)
+  if(xrHands.length && frame && ref){
+    let leftI=null, rightI=null;
+    xrHands.forEach(h=>{
+      const side=h.handedness==='left'?'left':'right';
+      const inp=readXRHand(h.src, frame, ref, side);
+      if(side==='left') leftI=inp; else rightI=inp;
+    });
+    // SUPER: ambas as mãos altas (estado filtrado)
+    const bothHigh = !!(leftI&&rightI&&leftI.jump&&rightI.jump);
+    if(xrHands.length>=2 && !vsCPU){
+      xrInputState[1]=leftI||rightI;
+      xrInputState[2]=rightI||leftI;
+      if(bothHigh && xrInputState[1]){
+        xrInputState[1].superKey=true;
+        xrInputState[1].jump=false;
+        if(xrInputState[2]){ xrInputState[2].jump=false; }
+      }
+    } else {
+      xrInputState[1]=mergeInput(leftI,rightI);
+      if(bothHigh && xrInputState[1]){
+        xrInputState[1].superKey=true;
+        xrInputState[1].jump=false;
+      }
+    }
+  }
+
+  // Controles físicos (complementa ou substitui se não houver mãos)
+  if(xrControllers.length){
+    const c1=readXRController(xrControllers[0]);
+    const c2=xrControllers[1]?readXRController(xrControllers[1]):null;
+    if(!xrInputState[1]) xrInputState[1]=c1;
+    else if(c1) xrInputState[1]=mergeInput(xrInputState[1],c1);
+    if(c2){
+      if(!xrInputState[2]) xrInputState[2]=c2;
+      else xrInputState[2]=mergeInput(xrInputState[2],c2);
+    }
+  }
 }
 function buildArena(ch1,ch2){
   const map = MAPS[selectedMap] || MAPS[0];
@@ -5669,9 +6131,10 @@ function initSuperCam(owner){
 // ══════════════════════════════════════════════════════
 //  GAME LOOP
 // ══════════════════════════════════════════════════════
-function gameLoop(ts){
-  // Em VR o Three.js chama via setAnimationLoop; fora usa rAF
+function gameLoop(ts, frame){
+  // Em VR o Three.js chama via setAnimationLoop (ts, XRFrame); fora usa rAF
   if(!vrActive) requestAnimationFrame(gameLoop);
+  xrFrame = frame || null;
   const rawDt=Math.min((ts-(lastTime||ts))/1000,0.05);lastTime=ts||performance.now();
   const t=(ts||performance.now())*0.001;const dt=rawDt;
   if(vrActive) pollXRInputs();
@@ -5695,10 +6158,14 @@ function gameLoop(ts){
   if(comboFadeTimer>0 && !fatalityState.active && !fatalityState.executed){comboFadeTimer-=rawDt;if(comboFadeTimer<=0){document.getElementById('combo-display').style.opacity=0;if(currentComboOwner===1&&p1)p1.combo=0;else if(p2)p2.combo=0;}}
   if(!p1||!p2){ if(renderer&&scene&&camera) renderer.render(scene,camera); return; }
   const midX=(p1.pos.x+p2.pos.x)/2,dist=Math.abs(p1.pos.x-p2.pos.x);
-  // Em VR o headset controla a câmera — não forçamos lookAt (só offset suave do ponto de vista)
+  // VR: primeira pessoa — mundo alinhado à cabeça do P1; headset controla o olhar
   if(vrActive){
-    // Opcional: mover um "palco" — mantemos cena fixa; usuário anda/olha livre no espaço local
-    if(shakeCamera>0){shakeCamera-=rawDt*2;}
+    updateVRFirstPerson();
+    if(shakeCamera>0) shakeCamera-=rawDt*2;
+    // Esconde nametags HTML (não funcionam bem no HMD)
+    const nt1=document.getElementById('name-tag-p1'), nt2=document.getElementById('name-tag-p2');
+    if(nt1) nt1.style.opacity='0';
+    if(nt2) nt2.style.opacity='0';
     if(renderer&&scene&&camera) renderer.render(scene,camera);
     return;
   }
@@ -5754,6 +6221,15 @@ function startGame(){
     p1.opponent=p2;p2.opponent=p1;
     renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
     lastTime=0;requestAnimationFrame(gameLoop);startRound(1);
+    // Se o jogador ativou VR no menu, entra automaticamente
+    if(preferVR && !vrActive){
+      setTimeout(()=>{
+        enterVR().catch(e=>{
+          console.warn('Auto VR failed', e);
+          if(typeof showAnnounce==='function') showAnnounce('VR', 'Ative pelo botão 🥽', 2000);
+        });
+      }, 600);
+    }
   });
 }
 document.getElementById('back-btn').addEventListener('click',()=>location.reload());
